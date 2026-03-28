@@ -59,3 +59,6 @@ class MinSatellitesRequest(BaseModel):
     region: RegionInput
     missionType: str
     satelliteProfile: SensorModelInput
+
+class DecryptRequest(BaseModel):
+    encrypted_token: str
