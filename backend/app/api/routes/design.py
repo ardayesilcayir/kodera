@@ -1,57 +1,74 @@
 from fastapi import APIRouter
+from typing import Dict, Any
+
 from app.api.schemas.models import DesignRequest, DecryptRequest
 from app.core.security import encrypt_dict, decrypt_dict
+from app.services.orbital_engine.engine_facade import OrbitalEngineFacade
+from app.services.nlp_service import NLPService
 
 router = APIRouter()
 
-@router.post("/run")
-async def run_design(request: DesignRequest):
+@router.post("/generate")
+async def generate_constellation(request: Dict[str, Any]):
     """
-    Mission-Based Design akışını çalıştırır
+    Sıfırdan bir uydu görevi (Constellation) tasarımı yaratır.
+    optimization_location algoritmasını tetikler.
     """
-    # Servis çağrısı
-    # Uydu dizilimi ve optimizasyon verisini güvenli hale (kriptolu) getiriyoruz
-    constellation_data = {
-        "orbit_type": "LEO",
-        "altitude": 550.0,
-        "inclination": 45.0,
-        "plane_count": 6,
-        "satellite_count": 24,
-        "phase_layout": "Walker-Star"
-    }
-    encrypted_payload = encrypt_dict(constellation_data)
-
-    return {
-        "recommended_constellation_encrypted": encrypted_payload,
-        "metrics": {
-            "coverage_ratio": 98.5,
-            "continuity": 95.0,
-            "revisit_time": 10.5,
-            "redundancy": 2,
-            "max_gap": 15.0
-        },
-        "alternatives": [
-            {
-                "type": "Cost Optimized",
-                "satellite_count": 12,
-                "coverage": 85.0
-            },
-            {
-                "type": "Balanced",
-                "satellite_count": 24,
-                "coverage": 98.5
-            },
-            {
-                "type": "Resilient",
-                "satellite_count": 48,
-                "coverage": 99.9
+    try:
+        # Matematik motoruna payload gönder
+        result = OrbitalEngineFacade.run_design_optimization(request)
+        
+        # Fizik motorunun rakamsal verilerini NLP'ye (Gemma) gönderip mühendislik yorumu al
+        ai_summary = NLPService.generate_engineering_summary(result, "Constellation Optimization (Walker)")
+        
+        # NLP Yorumunu veriye ekle
+        result["ai_engineering_summary"] = ai_summary
+        
+        # Sonucu güvenli hale getir
+        encrypted_payload = encrypt_dict(result)
+        
+        return {
+            "status": "success",
+            "feature": "constellation_design",
+            "encrypted_data": encrypted_payload,
+            "raw_preview": {
+                "total_evaluations": len(result.get("evaluations", [])),
+                "ai_summary_preview": ai_summary[:60] + "..."
             }
-        ],
-        "explanation": {
-            "satellite_count_reason": "Seçili bölge üzerinde %98+ kapsama sağlamak için minimum 24 uydu hesaplandı.",
-            "inclination_reason": f"Görevin {request.mission.type} tipinde ve enlemlerine göre 45 derece eğim optimum bulundu."
         }
-    }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.post("/reposition")
+async def reposition_satellite(request: Dict[str, Any]):
+    """
+    Mevcut bir uyduyu başka bir yörüngeye kaydırma senaryosunu işletir.
+    to_move algoritmasını tetikler.
+    """
+    try:
+        # Manevra motoruna payload gönder
+        result = OrbitalEngineFacade.run_reposition_scenario(request)
+        
+        # Fizik motorunun rakamsal verilerini NLP'ye (Gemma) gönderip mühendislik yorumu al
+        ai_summary = NLPService.generate_engineering_summary(result, "Satellite Reposition (J2 Drift & Delta-V Maneuver)")
+        
+        # NLP Yorumunu veriye ekle
+        result["ai_engineering_summary"] = ai_summary
+        
+        # Sonucu güvenli hale getir
+        encrypted_payload = encrypt_dict(result)
+        
+        return {
+            "status": "success",
+            "feature": "satellite_reposition",
+            "encrypted_data": encrypted_payload,
+            "raw_preview": {
+                "best_score": result.get("best_plan", {}).get("final_score"),
+                "ai_summary_preview": ai_summary[:60] + "..."
+            }
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 @router.post("/decrypt")
 async def decrypt_constellation(request: DecryptRequest):
@@ -62,7 +79,7 @@ async def decrypt_constellation(request: DecryptRequest):
         decrypted_data = decrypt_dict(request.encrypted_token)
         return {
             "status": "success",
-            "decrypted_constellation": decrypted_data
+            "decrypted_data": decrypted_data
         }
     except Exception as e:
         return {

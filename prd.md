@@ -518,5 +518,3 @@ Proje kapsamı dağılabilir
 1. Son ürün tanımı
 
 ORBITA-R, seçilen bölge ve görev amacına göre 7/24 kapsama sağlayacak optimum uydu takım mimarisini tasarlayan; bozulmuş koşullar, öncelikli bölgeler ve arıza senaryolarını da dikkate alan bir bölgesel constellation optimization platformudur.
-
-Malatyalı44.
