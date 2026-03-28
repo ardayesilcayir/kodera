@@ -82,10 +82,10 @@ app.add_middleware(
 API_V1_PREFIX = "/api/v1"
 
 app.include_router(design.router,    prefix=API_V1_PREFIX + "/design", tags=["design"])
-app.include_router(scenario.router,  prefix=API_V1_PREFIX + "/scenario", tags=["scenario"])
-app.include_router(coverage.router,  prefix=API_V1_PREFIX + "/coverage", tags=["coverage"])
-app.include_router(risk.router,      prefix=API_V1_PREFIX + "/risk", tags=["risk"])
-app.include_router(optimizer.router, prefix=API_V1_PREFIX + "/optimizer", tags=["optimizer"])
+# app.include_router(scenario.router,  prefix=API_V1_PREFIX + "/scenario", tags=["scenario"])
+# app.include_router(coverage.router,  prefix=API_V1_PREFIX + "/coverage", tags=["coverage"])
+# app.include_router(risk.router,      prefix=API_V1_PREFIX + "/risk", tags=["risk"])
+# app.include_router(optimizer.router, prefix=API_V1_PREFIX + "/optimizer", tags=["optimizer"])
 app.include_router(auth.router,      prefix=API_V1_PREFIX + "/auth", tags=["auth"])
 
 

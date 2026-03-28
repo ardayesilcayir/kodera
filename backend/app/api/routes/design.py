@@ -1,22 +1,26 @@
 from fastapi import APIRouter
 from typing import Dict, Any
 
-from app.api.schemas.models import DesignRequest, DecryptRequest
-from app.core.security import encrypt_dict, decrypt_dict
+from fastapi.concurrency import run_in_threadpool
+# 1. İlk olarak Facade'i yükleriz ki sys.path enjeksiyonları (design_module, maneuver_module) gerçekleşsin
 from app.services.orbital_engine.engine_facade import OrbitalEngineFacade
+# 2. Sonra Pydantic modelleri ve şemaları yükleriz
+from app.api.schemas.models import DecryptRequest, RepositionScenarioRequest, OrbitDesignRequest
+from app.core.security import encrypt_dict, decrypt_dict
 from app.services.nlp_service import NLPService
 
 router = APIRouter()
 
 @router.post("/generate")
-async def generate_constellation(request: Dict[str, Any]):
+async def generate_constellation(request: OrbitDesignRequest):
     """
-    Sıfırdan bir uydu görevi (Constellation) tasarımı yaratır.
-    optimization_location algoritmasını tetikler.
+    Sıfırdan bir uydu görevi (Constellation) tasarımı yaratır. Pydantic şemasını zorunlu tutar.
+    optimization_location algoritmasını CPU-Bound threadpool üzerinde tetikler.
     """
     try:
-        # Matematik motoruna payload gönder
-        result = OrbitalEngineFacade.run_design_optimization(request)
+        # FastAPI Event Loop kilitlenmemesi için senkron matematik motorunu arka planda havuzda çalıştırır
+        payload_dict = request.model_dump() if hasattr(request, 'model_dump') else request.dict()
+        result = await run_in_threadpool(OrbitalEngineFacade.run_design_optimization, payload_dict)
         
         # Fizik motorunun rakamsal verilerini NLP'ye (Gemma) gönderip mühendislik yorumu al
         ai_summary = NLPService.generate_engineering_summary(result, "Constellation Optimization (Walker)")
@@ -40,14 +44,15 @@ async def generate_constellation(request: Dict[str, Any]):
         return {"status": "error", "message": str(e)}
 
 @router.post("/reposition")
-async def reposition_satellite(request: Dict[str, Any]):
+async def reposition_satellite(request: RepositionScenarioRequest):
     """
-    Mevcut bir uyduyu başka bir yörüngeye kaydırma senaryosunu işletir.
-    to_move algoritmasını tetikler.
+    Mevcut bir uyduyu başka bir yörüngeye kaydırma senaryosunu işletir. Pydantic şemasını zorunlu tutar.
+    to_move algoritmasını CPU-Bound threadpool üzerinde tetikler.
     """
     try:
-        # Manevra motoruna payload gönder
-        result = OrbitalEngineFacade.run_reposition_scenario(request)
+        # FastAPI Event Loop kilitlenmemesi için senkron manevra motorunu arka planda havuzda çalıştırır
+        payload_dict = request.model_dump() if hasattr(request, 'model_dump') else request.dict()
+        result = await run_in_threadpool(OrbitalEngineFacade.run_reposition_scenario, payload_dict)
         
         # Fizik motorunun rakamsal verilerini NLP'ye (Gemma) gönderip mühendislik yorumu al
         ai_summary = NLPService.generate_engineering_summary(result, "Satellite Reposition (J2 Drift & Delta-V Maneuver)")

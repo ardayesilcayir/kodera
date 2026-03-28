@@ -1,8 +1,14 @@
 import os
 import gc
 import json
-from llama_cpp import Llama
 from dotenv import load_dotenv
+
+try:
+    from llama_cpp import Llama
+    LLAMA_AVAILABLE = True
+except ImportError:
+    LLAMA_AVAILABLE = False
+    Llama = None
 
 # Env yüklenmesi (Huggingface vb.)
 load_dotenv(dotenv_path=r"c:\Users\arda\Desktop\kodera\backend\.env")
@@ -21,24 +27,53 @@ class NLPService:
         JSON tabanlı sayısal fizik verisini, Gemma 2B LLM motoruna sokar
         ve doğal dilde mühendislik yorumuna çevirir.
         """
+        if not LLAMA_AVAILABLE:
+            return "Yapay Zeka (NLP) kütüphanesi (llama-cpp-python) sistemde kurulu değil, sadece matematiksel veriler üretildi:\n\n" + compact_data
+
         # Model ortamda (disk) yoksa erken dön
         if not os.path.exists(MODEL_PATH):
-            return "Yapay Zeka (NLP) modeli diskte bulunamadığı için sadece sayısal veriler üretildi."
+            return "Yapay Zeka (NLP) modeli diskte bulunamadığı için sadece sayısal veriler üretildi:\n\n" + compact_data
 
-        # Karmaşık Dictionary verisini küçültme ve düzleştirme (KV Cache şişmesini önlemek için)
-        # Çok derin JSON ağaçları modeli boğabilir, o yüzden ilk 800 karakterle sınırlıyoruz
-        raw_data_str = json.dumps(data_metrics, ensure_ascii=False)
-        compact_data = raw_data_str[:800] + ("..." if len(raw_data_str) > 800 else "")
+        # Modeli boğmamak (KV Cache oom) ve halüsinasyonu engellemek için, sadece önemli metrikleri "cımbızlıyoruz"
+        summary_dict = {}
+        if "Walker" in feature_type:
+            # Constellation (Walker) modu için kritik KPI'ları ayıkla
+            top_plans = data_metrics.get("evaluations", [])[:3]
+            summary_dict = {
+                "total_candidate_count": len(data_metrics.get("evaluations", [])),
+                "best_recommended_candidates": [
+                    {
+                        "orbit_type": p.get("orbit", {}).get("type"),
+                        "satellites": p.get("orbit", {}).get("total_satellites"),
+                        "planes": p.get("orbit", {}).get("planes"),
+                        "coverage_score": p.get("coverage", {}).get("score", 0),
+                        "cost": p.get("cost", 0)
+                    } for p in top_plans if isinstance(p, dict)
+                ][:1]
+            }
+        elif "Reposition" in feature_type:
+            # Manevra modu için kritik KPI'ları ayıkla
+            best_plan = data_metrics.get("best_plan", {})
+            summary_dict = {
+                "top_score": best_plan.get("final_score"),
+                "status": best_plan.get("operational_status"),
+                "transfer_metrics": best_plan.get("transfer_summary", {}),
+                "risk_breakdown": best_plan.get("risk_analysis", {}).get("risk_factors", [])
+            }
+        else:
+            summary_dict = {"raw_preview": str(data_metrics)[:200]}
+
+        compact_data = json.dumps(summary_dict, ensure_ascii=False)
 
         # Gemma 2 formatına uygun Sistem Kuralları birleştirme
         system_rules = (
-            "You are a professional aerospace engineer. Analyze the following orbital output. "
-            "Write exactly 4 sentences explaining the physical feasibility, costs, and coverage impact. "
-            "Keep it strictly professional and concise."
+            "Sen uzman bir uzay mühendisisin. Lütfen yanıtını KESİNLİKLE TÜRKÇE ver. "
+            "Aşağıdaki yörünge (orbital) çıktılarını incele. Sonucu, donanım maliyetleri, kapsama alanı ve "
+            "fiziksel yapılabilirlik açısından değerlendirip en fazla 3-4 cümlelik sade, anlaşılır ve özet bir Türkçe rapor yaz."
         )
         
-        user_msg = f"Feature: {feature_type}\nMetrics: {compact_data}\n\nProvide the explanation:"
-        combined_prompt = f"{system_rules}\n\nUser Request: {user_msg}"
+        user_msg = f"Simülasyon Türü: {feature_type}\nSonuç Metrikleri: {compact_data}\n\nLütfen kapsamlı ve anlaşılır Türkçe mühendislik özetini yazın:"
+        combined_prompt = f"{system_rules}\n\n[Kullanıcı İstemi]: {user_msg}"
 
         llm = None
         analysis_text = ""

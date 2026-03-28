@@ -128,7 +128,7 @@ class RegionPointRadius(BaseModel):
     mode: Literal["point_radius"]
     lat: Annotated[float, Field(ge=WGS84_LAT_MIN, le=WGS84_LAT_MAX)]
     lon: Annotated[float, Field(ge=WGS84_LON_MIN, le=WGS84_LON_MAX)]
-    radius_km: Annotated[float, Field(gt=0.0)]
+    radius_km: Annotated[float, Field(gt=0.0, le=2500.0)]
 
 
 class RegionPolygon(BaseModel):

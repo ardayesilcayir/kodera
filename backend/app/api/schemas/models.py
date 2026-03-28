@@ -1,6 +1,21 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional, Literal, Dict, Any
 
+from app.services.orbital_engine.design_module.request_models import OrbitDesignRequest
+from app.services.orbital_engine.maneuver_module.satellite_models import Satellite, MissionConstraints
+from app.services.orbital_engine.maneuver_module.simulation_state import SimulationState
+from app.services.orbital_engine.maneuver_module.target_region import TargetRegion
+
+class RepositionScenarioRequest(BaseModel):
+    satellite: Satellite
+    target_region: TargetRegion
+    constraints: MissionConstraints
+    sim_state: SimulationState
+    mission_type: Literal["communication", "observation", "emergency", "balanced"] = "communication"
+
+class DecryptRequest(BaseModel):
+    encrypted_token: str
+
 class Point(BaseModel):
     lat: float = Field(..., description="Latitude")
     lon: float = Field(..., description="Longitude")
@@ -59,6 +74,3 @@ class MinSatellitesRequest(BaseModel):
     region: RegionInput
     missionType: str
     satelliteProfile: SensorModelInput
-
-class DecryptRequest(BaseModel):
-    encrypted_token: str
