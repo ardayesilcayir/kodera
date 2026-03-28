@@ -6,7 +6,7 @@ FastAPI application entrypoint
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import design, scenario, coverage, risk, optimizer
+from app.api.routes import design, scenario, coverage, risk, optimizer, auth
 
 # ---------------------------------------------------------------------------
 # Application factory
@@ -56,6 +56,10 @@ app = FastAPI(
             "name": "optimizer",
             "description": "Minimum uydu sayısı ve optimizasyon yardımcıları.",
         },
+        {
+            "name": "auth",
+            "description": "Supabase JWT Kimlik doğrulama işlemleri.",
+        },
     ],
 )
 
@@ -82,6 +86,7 @@ app.include_router(scenario.router,  prefix=API_V1_PREFIX + "/scenario", tags=["
 app.include_router(coverage.router,  prefix=API_V1_PREFIX + "/coverage", tags=["coverage"])
 app.include_router(risk.router,      prefix=API_V1_PREFIX + "/risk", tags=["risk"])
 app.include_router(optimizer.router, prefix=API_V1_PREFIX + "/optimizer", tags=["optimizer"])
+app.include_router(auth.router,      prefix=API_V1_PREFIX + "/auth", tags=["auth"])
 
 
 # ---------------------------------------------------------------------------
