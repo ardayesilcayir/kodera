@@ -1,0 +1,29 @@
+{
+  "region": {
+    "mode": "point_radius",
+    "lat": 39.0,
+    "lon": 35.0,
+    "radius_km": 500.0
+  },
+  "mission": {
+    "type": "BALANCED",
+    "continuous_coverage_required": true,
+    "analysis_horizon_hours": 24.0,
+    "validation_horizon_days": 7.0
+  },
+  "sensor_model": {
+    "type": "radar",
+    "sensor_half_angle_deg": 2.5,
+    "max_off_nadir_deg": 30.0,
+    "min_access_duration_s": 120.0
+  },
+  "optimization": {
+    "primary_goal": "MINIMIZE_TOTAL_COST",
+    "secondary_goals": [],
+    "allowed_orbit_families": [
+      "MEO"
+    ],
+    "max_satellites": 8,
+    "max_planes": 2
+  }
+}

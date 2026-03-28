@@ -1,0 +1,62 @@
+{
+  "$defs": {
+    "ValidationErrorItem": {
+      "additionalProperties": false,
+      "description": "Single validation issue with JSON-pointer-friendly location.",
+      "properties": {
+        "loc": {
+          "description": "Path to the invalid field (strings and integer indices).",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "title": "Loc",
+          "type": "array"
+        },
+        "msg": {
+          "title": "Msg",
+          "type": "string"
+        },
+        "type": {
+          "description": "Pydantic / internal error type identifier.",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "loc",
+        "msg",
+        "type"
+      ],
+      "title": "ValidationErrorItem",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "valid": {
+      "const": false,
+      "default": false,
+      "title": "Valid",
+      "type": "boolean"
+    },
+    "errors": {
+      "items": {
+        "$ref": "#/$defs/ValidationErrorItem"
+      },
+      "title": "Errors",
+      "type": "array"
+    }
+  },
+  "required": [
+    "errors"
+  ],
+  "title": "ValidationRejectedResponse",
+  "type": "object"
+}

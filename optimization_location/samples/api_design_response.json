@@ -1,0 +1,49 @@
+{
+  "recommended_architecture": {
+    "orbit_family": "LEO",
+    "altitude_km": 500.0,
+    "inclination_deg": 51.6,
+    "total_satellites_T": 4,
+    "planes_P": 2,
+    "phase_F": 0
+  },
+  "top_candidates": [
+    {
+      "rank": 1,
+      "orbit_family": "LEO",
+      "altitude_km": 500.0,
+      "inclination_deg": 51.6,
+      "total_satellites_T": 4,
+      "planes_P": 2,
+      "phase_F": 0,
+      "feasible": true,
+      "cost_score": 2000.0,
+      "complexity_score": 8.0,
+      "min_point_coverage": 0.0,
+      "worst_cell_gap_seconds": 0.0
+    }
+  ],
+  "feasibility_summary": {
+    "continuous_coverage_required": false,
+    "recommended_feasible": true,
+    "total_candidates_evaluated": 1,
+    "pruned_by_footprint": 0,
+    "simulated_continuous_infeasible": 0
+  },
+  "coverage_metrics": {
+    "min_point_coverage": 0.0,
+    "mean_point_coverage": 0.0,
+    "overall_coverage_ratio": 0.0,
+    "max_gap_seconds": 0.0,
+    "worst_cell_gap_seconds": 0.0,
+    "revisit_mean_seconds": 0.0,
+    "revisit_median_seconds": 0.0,
+    "continuous_24_7_feasible": false
+  },
+  "explanation": [
+    "Evaluated 1 constellation candidates (0 footprint-pruned before simulation, 0 failed continuous coverage after simulation).",
+    "Selected: LEO at 500.0 km, i=51.60\u00b0, Walker T=4 P=2 F=0.",
+    "Ranking keys: T=4, worst_cell_gap=0.000 s, cost_score=2000.0000, complexity_score=8.0000.",
+    "Coverage: min_point=0.000000, mean_point=0.000000, overall=0.000000, continuous_24_7_feasible=False."
+  ]
+}

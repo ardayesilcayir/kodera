@@ -1,0 +1,37 @@
+{
+  "region": {
+    "mode": "polygon",
+    "polygon": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [26.5, 40.5],
+          [30.5, 40.5],
+          [30.5, 41.5],
+          [26.5, 41.5],
+          [26.5, 40.5]
+        ]
+      ]
+    }
+  },
+  "mission": {
+    "type": "EARTH_OBSERVATION",
+    "continuous_coverage_required": false,
+    "analysis_horizon_hours": 6.0,
+    "validation_horizon_days": 30.0
+  },
+  "sensor_model": {
+    "type": "optical",
+    "min_elevation_deg": 15.0,
+    "sensor_half_angle_deg": 17.5,
+    "max_off_nadir_deg": 30.0,
+    "min_access_duration_s": 45.0
+  },
+  "optimization": {
+    "primary_goal": "MINIMIZE_SATELLITE_COUNT",
+    "secondary_goals": ["MINIMIZE_LAUNCH_MASS"],
+    "allowed_orbit_families": ["SSO"],
+    "max_satellites": 24,
+    "max_planes": 6
+  }
+}

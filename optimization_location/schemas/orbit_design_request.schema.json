@@ -1,0 +1,293 @@
+{
+  "$defs": {
+    "GeoJSONPolygon": {
+      "additionalProperties": false,
+      "description": "GeoJSON Polygon geometry (RFC 7946).\nCoordinates are in WGS84 lon/lat; altitude not supported in this contract.",
+      "properties": {
+        "type": {
+          "const": "Polygon",
+          "title": "Type",
+          "type": "string"
+        },
+        "coordinates": {
+          "items": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "type": "array"
+          },
+          "title": "Coordinates",
+          "type": "array"
+        }
+      },
+      "required": [
+        "type",
+        "coordinates"
+      ],
+      "title": "GeoJSONPolygon",
+      "type": "object"
+    },
+    "MissionSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/MissionType"
+        },
+        "continuous_coverage_required": {
+          "title": "Continuous Coverage Required",
+          "type": "boolean"
+        },
+        "analysis_horizon_hours": {
+          "exclusiveMinimum": 0.0,
+          "title": "Analysis Horizon Hours",
+          "type": "number"
+        },
+        "validation_horizon_days": {
+          "exclusiveMinimum": 0.0,
+          "title": "Validation Horizon Days",
+          "type": "number"
+        }
+      },
+      "required": [
+        "type",
+        "continuous_coverage_required",
+        "analysis_horizon_hours",
+        "validation_horizon_days"
+      ],
+      "title": "MissionSpec",
+      "type": "object"
+    },
+    "MissionType": {
+      "enum": [
+        "EMERGENCY_COMMS",
+        "EARTH_OBSERVATION",
+        "BALANCED",
+        "BROADCAST"
+      ],
+      "title": "MissionType",
+      "type": "string"
+    },
+    "OptimizationSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "primary_goal": {
+          "$ref": "#/$defs/PrimaryOptimizationGoal"
+        },
+        "secondary_goals": {
+          "items": {
+            "$ref": "#/$defs/SecondaryOptimizationGoal"
+          },
+          "title": "Secondary Goals",
+          "type": "array"
+        },
+        "allowed_orbit_families": {
+          "items": {
+            "$ref": "#/$defs/OrbitFamily"
+          },
+          "minItems": 1,
+          "title": "Allowed Orbit Families",
+          "type": "array"
+        },
+        "max_satellites": {
+          "minimum": 1,
+          "title": "Max Satellites",
+          "type": "integer"
+        },
+        "max_planes": {
+          "minimum": 1,
+          "title": "Max Planes",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "primary_goal",
+        "secondary_goals",
+        "allowed_orbit_families",
+        "max_satellites",
+        "max_planes"
+      ],
+      "title": "OptimizationSpec",
+      "type": "object"
+    },
+    "OrbitFamily": {
+      "enum": [
+        "LEO",
+        "SSO",
+        "MEO",
+        "GEO",
+        "HEO",
+        "ELLIPTICAL"
+      ],
+      "title": "OrbitFamily",
+      "type": "string"
+    },
+    "PrimaryOptimizationGoal": {
+      "description": "Explicit optimization objectives; caller must choose.",
+      "enum": [
+        "MINIMIZE_TOTAL_COST",
+        "MINIMIZE_SATELLITE_COUNT",
+        "MAXIMIZE_COVERAGE_FRACTION",
+        "MINIMIZE_MAX_GAP_DURATION",
+        "MINIMIZE_MEAN_RESPONSE_LATENCY"
+      ],
+      "title": "PrimaryOptimizationGoal",
+      "type": "string"
+    },
+    "RegionPointRadius": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "const": "point_radius",
+          "title": "Mode",
+          "type": "string"
+        },
+        "lat": {
+          "maximum": 90.0,
+          "minimum": -90.0,
+          "title": "Lat",
+          "type": "number"
+        },
+        "lon": {
+          "maximum": 180.0,
+          "minimum": -180.0,
+          "title": "Lon",
+          "type": "number"
+        },
+        "radius_km": {
+          "exclusiveMinimum": 0.0,
+          "title": "Radius Km",
+          "type": "number"
+        }
+      },
+      "required": [
+        "mode",
+        "lat",
+        "lon",
+        "radius_km"
+      ],
+      "title": "RegionPointRadius",
+      "type": "object"
+    },
+    "RegionPolygon": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "const": "polygon",
+          "title": "Mode",
+          "type": "string"
+        },
+        "polygon": {
+          "$ref": "#/$defs/GeoJSONPolygon"
+        }
+      },
+      "required": [
+        "mode",
+        "polygon"
+      ],
+      "title": "RegionPolygon",
+      "type": "object"
+    },
+    "SecondaryOptimizationGoal": {
+      "enum": [
+        "MINIMIZE_LAUNCH_MASS",
+        "MINIMIZE_PROPULSION_BUDGET",
+        "MAXIMIZE_REDUNDANCY",
+        "MINIMIZE_GROUND_SEGMENT_COMPLEXITY"
+      ],
+      "title": "SecondaryOptimizationGoal",
+      "type": "string"
+    },
+    "SensorModelSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/SensorModelType"
+        },
+        "min_elevation_deg": {
+          "maximum": 90.0,
+          "minimum": 0.0,
+          "title": "Min Elevation Deg",
+          "type": "number"
+        },
+        "sensor_half_angle_deg": {
+          "exclusiveMinimum": 0.0,
+          "maximum": 90.0,
+          "title": "Sensor Half Angle Deg",
+          "type": "number"
+        },
+        "max_off_nadir_deg": {
+          "maximum": 90.0,
+          "minimum": 0.0,
+          "title": "Max Off Nadir Deg",
+          "type": "number"
+        },
+        "min_access_duration_s": {
+          "exclusiveMinimum": 0.0,
+          "title": "Min Access Duration S",
+          "type": "number"
+        }
+      },
+      "required": [
+        "type",
+        "min_elevation_deg",
+        "sensor_half_angle_deg",
+        "max_off_nadir_deg",
+        "min_access_duration_s"
+      ],
+      "title": "SensorModelSpec",
+      "type": "object"
+    },
+    "SensorModelType": {
+      "enum": [
+        "communications",
+        "optical",
+        "radar",
+        "generic"
+      ],
+      "title": "SensorModelType",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Full orbital design optimization request.\nAll sub-fields are required; no implicit mission defaults.",
+  "properties": {
+    "region": {
+      "discriminator": {
+        "mapping": {
+          "point_radius": "#/$defs/RegionPointRadius",
+          "polygon": "#/$defs/RegionPolygon"
+        },
+        "propertyName": "mode"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/RegionPointRadius"
+        },
+        {
+          "$ref": "#/$defs/RegionPolygon"
+        }
+      ],
+      "title": "Region"
+    },
+    "mission": {
+      "$ref": "#/$defs/MissionSpec"
+    },
+    "sensor_model": {
+      "$ref": "#/$defs/SensorModelSpec"
+    },
+    "optimization": {
+      "$ref": "#/$defs/OptimizationSpec"
+    }
+  },
+  "required": [
+    "region",
+    "mission",
+    "sensor_model",
+    "optimization"
+  ],
+  "title": "OrbitDesignRequest",
+  "type": "object"
+}

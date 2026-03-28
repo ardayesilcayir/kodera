@@ -1,0 +1,34 @@
+{
+  "region": {
+    "mode": "point_radius",
+    "lat": 39.925533,
+    "lon": 32.866287,
+    "radius_km": 750.0
+  },
+  "mission": {
+    "type": "EARTH_OBSERVATION",
+    "continuous_coverage_required": true,
+    "analysis_horizon_hours": 48.0,
+    "validation_horizon_days": 14.0
+  },
+  "sensor_model": {
+    "type": "optical",
+    "min_elevation_deg": 12.0,
+    "sensor_half_angle_deg": 0.35,
+    "max_off_nadir_deg": 20.0,
+    "min_access_duration_s": 45.0
+  },
+  "optimization": {
+    "primary_goal": "MAXIMIZE_COVERAGE_FRACTION",
+    "secondary_goals": [
+      "MINIMIZE_LAUNCH_MASS",
+      "MINIMIZE_PROPULSION_BUDGET"
+    ],
+    "allowed_orbit_families": [
+      "LEO",
+      "SSO"
+    ],
+    "max_satellites": 24,
+    "max_planes": 6
+  }
+}

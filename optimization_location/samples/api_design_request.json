@@ -1,0 +1,31 @@
+{
+  "region": {
+    "mode": "point_radius",
+    "lat": 38.3552,
+    "lon": 38.3095,
+    "radius_km": 75.0
+  },
+  "mission": {
+    "type": "EMERGENCY_COMMS",
+    "continuous_coverage_required": true,
+    "analysis_horizon_hours": 24,
+    "validation_horizon_days": 7
+  },
+  "sensor_model": {
+    "type": "communications",
+    "min_elevation_deg": 10.0,
+    "sensor_half_angle_deg": 45.0,
+    "max_off_nadir_deg": 45.0,
+    "min_access_duration_s": 60
+  },
+  "optimization": {
+    "primary_goal": "MINIMIZE_SATELLITE_COUNT",
+    "secondary_goals": [
+      "MINIMIZE_LAUNCH_MASS",
+      "MINIMIZE_PROPULSION_BUDGET"
+    ],
+    "allowed_orbit_families": ["LEO", "MEO", "GEO", "SSO"],
+    "max_satellites": 48,
+    "max_planes": 12
+  }
+}

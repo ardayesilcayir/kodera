@@ -1,0 +1,37 @@
+{
+  "region": {
+    "mode": "polygon",
+    "polygon": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [28.9, 40.95],
+          [29.1, 40.95],
+          [29.1, 41.1],
+          [28.9, 41.1],
+          [28.9, 40.95]
+        ]
+      ]
+    }
+  },
+  "mission": {
+    "type": "EMERGENCY_COMMS",
+    "continuous_coverage_required": true,
+    "analysis_horizon_hours": 6.0,
+    "validation_horizon_days": 7.0
+  },
+  "sensor_model": {
+    "type": "communications",
+    "min_elevation_deg": 10.0,
+    "sensor_half_angle_deg": 60.0,
+    "max_off_nadir_deg": 0.0,
+    "min_access_duration_s": 30.0
+  },
+  "optimization": {
+    "primary_goal": "MINIMIZE_SATELLITE_COUNT",
+    "secondary_goals": ["MAXIMIZE_REDUNDANCY"],
+    "allowed_orbit_families": ["LEO"],
+    "max_satellites": 36,
+    "max_planes": 6
+  }
+}
