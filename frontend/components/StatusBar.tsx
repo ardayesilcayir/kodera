@@ -101,28 +101,27 @@ export default function StatusBar() {
 
   return (
     <motion.div
+      className="glass-panel relative overflow-hidden select-none mx-auto"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '8px',
+        padding: '16px 24px',
+        borderRadius: '16px',
+        maxWidth: '1200px',
+        background: 'rgba(0, 20, 40, 0.4)',
+        border: '1px solid rgba(0, 245, 255, 0.2)',
+        backdropFilter: 'blur(12px)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,245,255,0.05)',
+      }}
       initial={{ y: 60, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 1, delay: 0.8, ease: 'easeOut' }}
+      animate={{ y: [0, -4, 0], opacity: 1 }}
+      transition={{ 
+        y: { duration: 5, repeat: Infinity, ease: 'easeInOut' },
+        opacity: { duration: 1, delay: 0.8, ease: 'easeOut' }
+      }}
     >
-      <motion.div
-        className="glass-panel relative overflow-hidden select-none mx-auto"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px',
-          padding: '16px 24px',
-          borderRadius: '16px',
-          maxWidth: '1200px',
-          background: 'rgba(0, 20, 40, 0.4)',
-          border: '1px solid rgba(0, 245, 255, 0.2)',
-          backdropFilter: 'blur(12px)',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,245,255,0.05)',
-        }}
-        animate={{ y: [0, -4, 0] }}
-        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-      >
 
 
       {metrics.map((metric, i) => (
@@ -163,7 +162,6 @@ export default function StatusBar() {
 
       {/* Inner glow gradient */}
       <div className="absolute inset-0 z-[-1] bg-gradient-to-r from-transparent via-[rgba(0,245,255,0.03)] to-transparent pointer-events-none" />
-    </motion.div>
     </motion.div>
   );
 }

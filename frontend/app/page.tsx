@@ -5,10 +5,10 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePrismStore } from '@/lib/store';
 import ProfilePanel from '@/components/ProfilePanel';
-import AssetFluxPanel from '@/components/AssetFluxPanel';
 import StatusBar from '@/components/StatusBar';
 import Header from '@/components/Header';
 import CountryInfoPanel from '@/components/CountryInfoPanel';
+import OptimizationHUD from '@/components/OptimizationHUD';
 
 // Dynamic import for SSR compatibility with Three.js
 const Scene = dynamic(() => import('@/components/Scene'), {
@@ -139,8 +139,6 @@ export default function Home() {
       >
         <ProfilePanel />
       </div>
-      {/* Full-Screen Integrated Telemetry HUD Overlay */}
-      <AssetFluxPanel />
 
       {/* Bottom Status Bar */}
       <div
@@ -157,13 +155,15 @@ export default function Home() {
           onClose={() => {
             setSelectedCountry(null);
             usePrismStore.getState().setCameraZoomed(false);
-            usePrismStore.getState().setAssetFluxActive(false);
+            usePrismStore.getState().setShowOptimizationResults(false);
           }}
         />
       </div>
 
-      {/* Consolidated Floating HUD Overlay (Far Right) */}
-      <AssetFluxPanel />
+      {/* Right Side Optimization HUD */}
+      <OptimizationHUD />
+
+      {/* Integrated Tactical HUD Overlay */}
 
       {/* Corner HUD labels */}
       <motion.div

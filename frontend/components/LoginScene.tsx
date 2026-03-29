@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useMemo } from 'react';
+import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Sphere, Stars, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
@@ -14,9 +14,9 @@ export default function LoginScene() {
     'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_clouds_1024.png',
   ]);
 
-  useMemo(() => {
+  useEffect(() => {
     dayMap.colorSpace = THREE.SRGBColorSpace;
-  }, [dayMap, cloudsMap]);
+  }, [dayMap]);
 
   useFrame((state, delta) => {
     if (groupRef.current) {

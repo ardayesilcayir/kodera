@@ -39,7 +39,7 @@ function DataRow({ label, value, color = "white", side = 'left' }: { label: stri
 
 export default function ScanPage() {
   const router = useRouter();
-  const { selectedCountry } = usePrismStore();
+  const { selectedCountry, scanResult, scanError, resetScan } = usePrismStore();
   const [progress, setProgress] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
@@ -59,6 +59,7 @@ export default function ScanPage() {
     return () => {
        clearInterval(interval);
        clearInterval(logGen);
+       resetScan();
     };
   }, []);
 
@@ -90,11 +91,11 @@ export default function ScanPage() {
          <motion.div initial={{ x: -60, opacity: 0 }} animate={{ x: 0, opacity: 1 }}>
             <TacticalBox title="SECTOR_PROFILE">
                <div className="mb-4">
-                  <h2 className="text-2xl font-black text-white tracking-widest uppercase truncate">{selectedCountry?.name || 'GLOBAL'}</h2>
-                  <div className="font-mono-tech text-[9px] text-cyan-400/40 uppercase tracking-[4px]">{selectedCountry?.region || 'International_Waters'}</div>
+                  <h2 className="text-2xl font-black text-white tracking-widest uppercase truncate">{scanResult?.constellation_name || selectedCountry?.name || 'GLOBAL'}</h2>
+                  <div className="font-mono-tech text-[9px] text-cyan-400/40 uppercase tracking-[4px]">{scanResult?.region_id || selectedCountry?.region || 'International_Waters'}</div>
                </div>
-               <DataRow label="Target_Type" value="STRATEGIC" color="#00ffcc" />
-               <DataRow label="Status" value="SECURE" />
+               <DataRow label="Target_Type" value={scanResult?.mission_type || "STRATEGIC"} color="#00ffcc" />
+               <DataRow label="Status" value={scanError ? "OFFLINE" : "SECURE"} />
             </TacticalBox>
             <TacticalBox title="GEOSPATIAL">
                <DataRow label="Latitude" value={`${selectedCountry?.lat.toFixed(4) || '0.000'}°`} />
@@ -108,37 +109,46 @@ export default function ScanPage() {
             <TacticalBox title="SCAN_PROGRESS" side="right">
                <div className="mb-4 text-right">
                   <div className="text-6xl font-black text-white tabular-nums tracking-tighter shadow-cyan-400/20 drop-shadow-[0_0_15px_rgba(0,245,255,0.4)]">
-                     {Math.floor(progress)}<span className="text-xl opacity-20 ml-1">%</span>
+                     {scanResult ? 100 : Math.floor(progress)}<span className="text-xl opacity-20 ml-1">%</span>
                   </div>
                </div>
                <div className="h-1 w-full bg-white/10 mt-4 rounded-full overflow-hidden">
-                  <motion.div className="h-full bg-cyan-400" initial={{ width: 0 }} animate={{ width: `${progress}%` }} />
+                  <motion.div className="h-full bg-cyan-400" initial={{ width: 0 }} animate={{ width: scanResult ? '100%' : `${progress}%` }} />
                </div>
             </TacticalBox>
-            <TacticalBox title="STABILITY" side="right">
-               <DataRow label="Latency" value="14.2 MS" side="right" />
-               <DataRow label="Uplink" value="OPTIMAL" color="#00ffcc" side="right" />
+            <TacticalBox title="ORBIT_DATA" side="right">
+               <DataRow label="Asset_Count" value={scanResult?.satellites?.length || '48'} side="right" />
+               <DataRow label="Orbit_Family" value={scanResult?.optimization?.allowed_orbit_families?.[0] || 'LEO'} color="#00ffcc" side="right" />
             </TacticalBox>
          </motion.div>
       </div>
 
       {/* 🚀 4. TERMINATE BUTTON (Moved Above StatusBar but at the bottom) */}
       <button 
-        onClick={() => router.push('/')} 
+        onClick={() => {
+           resetScan();
+           router.push('/');
+        }} 
         className="absolute bottom-28 left-1/2 -translate-x-1/2 z-50 text-[9px] tracking-[6px] text-white/30 hover:text-white transition-colors uppercase border-b border-white/5 pb-1"
       >
          Terminate_All_Uplinks
       </button>
 
-      {/* 🚀 5. CONSOLE LOGS HUD */}
+      {/* 🚀 5. CONSOLE LOGS & ERRORS HUD */}
       <div className="absolute bottom-[160px] left-1/2 -translate-x-1/2 z-10 pointer-events-none opacity-20 font-mono-tech text-[7px] text-cyan-400 text-center w-[400px]">
-         <AnimatePresence mode="popLayout">
-            {logs.map((log, i) => (
-               <motion.div key={log + i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  {log}
-               </motion.div>
-            ))}
-         </AnimatePresence>
+         {scanError ? (
+            <div className="text-red-500 font-bold bg-red-950/20 py-2 border border-red-500/30 animate-pulse">
+               CRITICAL_FAILURE: {scanError.toUpperCase()}
+            </div>
+         ) : (
+            <AnimatePresence mode="popLayout">
+               {logs.map((log, i) => (
+                  <motion.div key={log + i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                     {log}
+                  </motion.div>
+               ))}
+            </AnimatePresence>
+         )}
       </div>
 
     </div>
