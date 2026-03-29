@@ -6,9 +6,9 @@ import { useState, useEffect, useMemo } from 'react';
 
 function InfoRow({ label, value, valueColor = '#00f5ff' }: { label: string; value: string; valueColor?: string }) {
   return (
-    <div className="flex justify-between items-center bg-[rgba(0,10,20,0.5)] border border-[rgba(0,245,255,0.1)] p-2 rounded">
-      <span className="font-mono-tech text-[9px] text-[rgba(0,245,255,0.6)]">{label}</span>
-      <span className="font-mono-tech text-[10px]" style={{ color: valueColor }}>{value}</span>
+    <div className="flex justify-between items-center bg-[rgba(0,10,20,0.5)] border border-[rgba(0,245,255,0.1)] p-3 rounded-lg">
+      <span className="font-mono-tech text-[12px] text-[rgba(0,245,255,0.6)] uppercase tracking-wider">{label}</span>
+      <span className="font-mono-tech text-[13px] font-bold" style={{ color: valueColor }}>{value}</span>
     </div>
   );
 }
@@ -53,7 +53,7 @@ export default function OptimizationHUD() {
       {showOptimizationResults && (
         <motion.div
           className="glass-panel scanlines relative overflow-hidden select-none"
-          style={{ width: '280px', padding: '32px 24px', maxHeight: '70vh', display: 'flex', flexDirection: 'column' }}
+          style={{ width: '380px', padding: '40px 32px', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
           initial={{ x: 60, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: 60, opacity: 0 }}
@@ -61,28 +61,28 @@ export default function OptimizationHUD() {
           whileHover={{ borderColor: 'rgba(0,245,255,0.6)' }}
         >
           {/* HUD corners */}
-          <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-cyan-400 opacity-70" />
-          <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-cyan-400 opacity-70" />
-          <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-cyan-400 opacity-70" />
-          <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-cyan-400 opacity-70" />
+          <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-cyan-400 opacity-70" />
+          <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-cyan-400 opacity-70" />
+          <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-cyan-400 opacity-70" />
+          <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-cyan-400 opacity-70" />
 
           {/* Icon */}
-          <div className="flex justify-center mb-4 relative z-10">
+          <div className="flex justify-center mb-6 relative z-10">
             <motion.div
-              className="w-12 h-12 rounded-full flex items-center justify-center transition-shadow"
+              className="w-16 h-16 rounded-full flex items-center justify-center transition-shadow"
               style={{
-                border: '1px solid rgba(0,245,255,0.4)',
+                border: '2px solid rgba(0,245,255,0.4)',
                 background: 'rgba(0,245,255,0.05)',
-                boxShadow: '0 0 20px rgba(0,245,255,0.2)',
+                boxShadow: '0 0 30px rgba(0,245,255,0.2)',
               }}
               animate={{
                 boxShadow: scanResult
-                  ? ['0 0 10px rgba(0,255,204,0.2)', '0 0 25px rgba(0,255,204,0.5)', '0 0 10px rgba(0,255,204,0.2)']
-                  : ['0 0 10px rgba(0,245,255,0.2)', '0 0 25px rgba(0,245,255,0.5)', '0 0 10px rgba(0,245,255,0.2)'],
+                  ? ['0 0 15px rgba(0,255,204,0.2)', '0 0 35px rgba(0,255,204,0.5)', '0 0 15px rgba(0,255,204,0.2)']
+                  : ['0 0 15px rgba(0,245,255,0.2)', '0 0 35px rgba(0,245,255,0.5)', '0 0 15px rgba(0,245,255,0.2)'],
               }}
               transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={scanResult ? '#00ffcc' : '#00f5ff'} strokeWidth="1.5">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={scanResult ? '#00ffcc' : '#00f5ff'} strokeWidth="1.5">
                 <circle cx="12" cy="12" r="10" />
                 <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)" />
                 <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(-60 12 12)" />
@@ -92,10 +92,10 @@ export default function OptimizationHUD() {
           </div>
 
           {/* Label */}
-          <div className="text-center mb-3 relative z-10">
+          <div className="text-center mb-4 relative z-10">
             <span
-              className="font-orbitron text-xs font-bold tracking-widest text-neon"
-              style={{ fontSize: '11px', letterSpacing: '3px' }}
+              className="font-orbitron text-base font-bold tracking-[0.3em] text-neon"
+              style={{ fontSize: '16px' }}
             >
               MISSION INTEL
             </span>
@@ -103,7 +103,7 @@ export default function OptimizationHUD() {
 
           {/* Divider */}
           <div
-            className="w-full h-px mb-4 relative z-10"
+            className="w-full h-px mb-6 relative z-10"
             style={{ background: 'linear-gradient(90deg, transparent, rgba(0,245,255,0.4), transparent)' }}
           />
 
@@ -111,32 +111,32 @@ export default function OptimizationHUD() {
           <div className="overflow-y-auto no-scrollbar flex-1 relative z-10">
 
             {/* Sector info */}
-            <div className="space-y-3 mb-5">
+            <div className="space-y-4 mb-6">
               <InfoRow label="SECTOR" value={selectedCountry?.name || 'GLOBAL'} />
               <InfoRow label="MODE" value={missionMode} valueColor="#00ffcc" />
             </div>
 
             {/* Progress */}
             {(isScanning || scanResult || scanError) && (
-              <div className="mb-5">
-                <div className="flex justify-between items-center mb-1.5">
-                  <span className="font-mono-tech text-[8px] text-[rgba(0,245,255,0.5)] tracking-[2px] uppercase">PROGRESS</span>
-                  <span className="font-orbitron text-[11px] font-bold" style={{ color: scanError ? '#f87171' : scanResult ? '#00ffcc' : '#00f5ff' }}>
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-mono-tech text-[11px] text-[rgba(0,245,255,0.5)] tracking-[3px] uppercase">PROGRESS</span>
+                  <span className="font-orbitron text-[14px] font-bold" style={{ color: scanError ? '#f87171' : scanResult ? '#00ffcc' : '#00f5ff' }}>
                     {scanError ? 'ERROR' : `${Math.floor(progress)}%`}
                   </span>
                 </div>
-                <div className="h-1 w-full rounded-full overflow-hidden bg-[rgba(0,10,20,0.6)] border border-[rgba(0,245,255,0.1)]">
+                <div className="h-2 w-full rounded-full overflow-hidden bg-[rgba(0,10,20,0.6)] border border-[rgba(0,245,255,0.1)]">
                   <motion.div
                     className="h-full rounded-full"
                     style={{
                       background: scanError ? '#f87171' : scanResult ? 'linear-gradient(90deg, #059669, #00ffcc)' : 'linear-gradient(90deg, #0891b2, #00f5ff)',
-                      boxShadow: `0 0 8px ${scanError ? '#f87171' : scanResult ? '#00ffcc' : '#00f5ff'}`,
+                      boxShadow: `0 0 12px ${scanError ? '#f87171' : scanResult ? '#00ffcc' : '#00f5ff'}`,
                     }}
                     animate={{ width: scanError ? '100%' : `${progress}%` }}
                     transition={{ duration: 0.3 }}
                   />
                 </div>
-                <div className="font-mono-tech text-[7px] text-[rgba(0,245,255,0.3)] mt-1.5 tracking-wider">
+                <div className="font-mono-tech text-[10px] text-[rgba(0,245,255,0.3)] mt-2 tracking-wider">
                   {isScanning ? 'WALKER_ENUM + COVERAGE_SIM...' : scanResult ? 'OPTIMIZATION_COMPLETE' : scanError ? scanError : 'STANDBY'}
                 </div>
               </div>
@@ -144,19 +144,19 @@ export default function OptimizationHUD() {
 
             {/* Error */}
             {scanError && (
-              <div className="mb-5 p-2 rounded bg-[rgba(248,113,113,0.08)] border border-[rgba(248,113,113,0.2)]">
-                <span className="font-mono-tech text-[8px] text-red-400/80 break-words">{scanError}</span>
+              <div className="mb-6 p-3 rounded bg-[rgba(248,113,113,0.08)] border border-[rgba(248,113,113,0.2)]">
+                <span className="font-mono-tech text-[11px] text-red-400/80 break-words leading-relaxed">{scanError}</span>
               </div>
             )}
 
             {/* Loading skeleton */}
             {isScanning && !scanResult && (
-              <motion.div className="space-y-3 mb-5" initial={{ opacity: 0 }} animate={{ opacity: 0.5 }}>
+              <motion.div className="space-y-4 mb-6" initial={{ opacity: 0 }} animate={{ opacity: 0.5 }}>
                 {['SATELLITES', 'ALTITUDE', 'PLANES', 'COVERAGE'].map(k => (
-                  <div key={k} className="flex justify-between items-center bg-[rgba(0,10,20,0.5)] border border-[rgba(0,245,255,0.06)] p-2 rounded">
-                    <span className="font-mono-tech text-[9px] text-[rgba(0,245,255,0.3)]">{k}</span>
+                  <div key={k} className="flex justify-between items-center bg-[rgba(0,10,20,0.5)] border border-[rgba(0,245,255,0.06)] p-3 rounded-lg">
+                    <span className="font-mono-tech text-[12px] text-[rgba(0,245,255,0.3)]">{k}</span>
                     <motion.span
-                      className="font-mono-tech text-[10px] text-[rgba(0,245,255,0.2)]"
+                      className="font-mono-tech text-[13px] text-[rgba(0,245,255,0.2)]"
                       animate={{ opacity: [0.2, 0.5, 0.2] }}
                       transition={{ repeat: Infinity, duration: 1.5 }}
                     >
@@ -172,10 +172,10 @@ export default function OptimizationHUD() {
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
                 {rec ? (
                   <>
-                    <div className="mb-1">
-                      <span className="font-mono-tech text-[8px] text-[rgba(0,245,255,0.4)] tracking-[3px] uppercase">CONSTELLATION</span>
+                    <div className="mb-2 px-1">
+                      <span className="font-mono-tech text-[11px] text-[rgba(0,245,255,0.4)] tracking-[4px] uppercase">CONSTELLATION</span>
                     </div>
-                    <div className="space-y-3 mb-5">
+                    <div className="space-y-4 mb-6">
                       <InfoRow label="SATELLITES" value={String(rec.total_satellites_T)} />
                       <InfoRow label="PLANES" value={String(rec.planes_P)} />
                       <InfoRow label="SATS/PLANE" value={satsPerPlane != null ? String(satsPerPlane) : '—'} />
@@ -187,10 +187,10 @@ export default function OptimizationHUD() {
 
                     {metrics && (
                       <>
-                        <div className="mb-1">
-                          <span className="font-mono-tech text-[8px] text-[rgba(0,245,255,0.4)] tracking-[3px] uppercase">COVERAGE</span>
+                        <div className="mb-2 px-1">
+                          <span className="font-mono-tech text-[11px] text-[rgba(0,245,255,0.4)] tracking-[4px] uppercase">COVERAGE</span>
                         </div>
-                        <div className="space-y-3 mb-5">
+                        <div className="space-y-4 mb-6">
                           <InfoRow label="MIN_POINT" value={`${(metrics.min_point_coverage * 100).toFixed(2)}%`} valueColor="#00ffcc" />
                           <InfoRow label="MEAN" value={`${(metrics.mean_point_coverage * 100).toFixed(2)}%`} />
                           <InfoRow label="MAX_GAP" value={`${metrics.max_gap_seconds.toFixed(0)}s`} />
@@ -200,41 +200,41 @@ export default function OptimizationHUD() {
                       </>
                     )}
 
-                    <div className="mb-1">
-                      <span className="font-mono-tech text-[8px] text-[rgba(0,245,255,0.4)] tracking-[3px] uppercase">SOLVER</span>
+                    <div className="mb-2 px-1">
+                      <span className="font-mono-tech text-[11px] text-[rgba(0,245,255,0.4)] tracking-[4px] uppercase">SOLVER</span>
                     </div>
-                    <div className="space-y-3 mb-5">
+                    <div className="space-y-4 mb-6">
                       <InfoRow label="GOAL" value={req?.optimization?.primary_goal?.replace(/_/g, ' ') || '—'} />
                       <InfoRow label="COST" value={rec.cost_score.toFixed(4)} />
                       <InfoRow label="COMPLEXITY" value={rec.complexity_score.toFixed(4)} />
                     </div>
                   </>
                 ) : (
-                  <div className="p-2 rounded bg-[rgba(245,158,11,0.08)] border border-[rgba(245,158,11,0.2)] mb-5">
-                    <span className="font-mono-tech text-[8px] text-amber-400/80">NO FEASIBLE SOLUTION</span>
+                  <div className="p-3 rounded bg-[rgba(245,158,11,0.08)] border border-[rgba(245,158,11,0.2)] mb-6">
+                    <span className="font-mono-tech text-[11px] text-amber-400/80 uppercase tracking-wider">NO FEASIBLE SOLUTION</span>
                   </div>
                 )}
 
                 {ai && (
-                  <div className="mb-5">
-                    <div className="mb-1">
-                      <span className="font-mono-tech text-[8px] text-[rgba(0,245,255,0.4)] tracking-[3px] uppercase">AI SUMMARY</span>
+                  <div className="mb-6">
+                    <div className="mb-2 px-1">
+                      <span className="font-mono-tech text-[11px] text-[rgba(0,245,255,0.4)] tracking-[4px] uppercase">AI SUMMARY</span>
                     </div>
-                    <div className="bg-[rgba(0,10,20,0.5)] border border-[rgba(0,245,255,0.1)] p-3 rounded">
-                      <p className="font-mono-tech text-[8px] text-[rgba(0,245,255,0.6)] leading-relaxed whitespace-pre-line">{ai}</p>
+                    <div className="bg-[rgba(0,10,20,0.5)] border border-[rgba(0,245,255,0.1)] p-4 rounded-lg">
+                      <p className="font-mono-tech text-[12px] text-[rgba(0,245,255,0.7)] leading-relaxed whitespace-pre-line">{ai}</p>
                     </div>
                   </div>
                 )}
 
                 {explanations.length > 0 && (
-                  <div className="mb-3">
-                    <div className="mb-1">
-                      <span className="font-mono-tech text-[8px] text-[rgba(0,245,255,0.4)] tracking-[3px] uppercase">ENGINE LOG</span>
+                  <div className="mb-4">
+                    <div className="mb-2 px-1">
+                      <span className="font-mono-tech text-[11px] text-[rgba(0,245,255,0.4)] tracking-[4px] uppercase">ENGINE LOG</span>
                     </div>
-                    <div className="bg-[rgba(0,10,20,0.5)] border border-[rgba(0,245,255,0.1)] p-3 rounded space-y-1">
+                    <div className="bg-[rgba(0,10,20,0.5)] border border-[rgba(0,245,255,0.1)] p-4 rounded-lg space-y-2">
                       {explanations.slice(0, 5).map((line, i) => (
-                        <div key={i} className="font-mono-tech text-[7px] text-[rgba(0,245,255,0.4)] leading-relaxed">
-                          <span className="text-[rgba(0,245,255,0.25)] mr-1">[{String(i + 1).padStart(2, '0')}]</span>{line}
+                        <div key={i} className="font-mono-tech text-[10px] text-[rgba(0,245,255,0.5)] leading-relaxed">
+                          <span className="text-[rgba(0,245,255,0.3)] mr-2 font-bold">[{String(i + 1).padStart(2, '0')}]</span>{line}
                         </div>
                       ))}
                     </div>
@@ -246,9 +246,9 @@ export default function OptimizationHUD() {
 
           {/* Close button at bottom */}
           <motion.button
-            className="btn-neon w-full font-orbitron relative z-10 mt-4"
+            className="btn-neon w-full font-orbitron relative z-10 mt-6 py-3 text-sm tracking-widest"
             style={{ background: 'rgba(0,245,255,0.1)' }}
-            whileHover={{ scale: 1.04 }}
+            whileHover={{ scale: 1.04, background: 'rgba(0,245,255,0.2)' }}
             whileTap={{ scale: 0.96 }}
             onClick={() => setShowOptimizationResults(false)}
           >
