@@ -1,7 +1,7 @@
 # 🌌 ORBITA-R: Bölgesel Uydu Takımı Optimizasyon Sistemi
 
 <div align="center">
-  <img src="frontend/public/tactical_turkey.png" alt="ORBITA-R Banner" width="600px" style="border-radius: 10px; margin-bottom: 20px;">
+  <img src="frontend/public/prism_orbit_command.png" alt="ORBITA-R Dashboard" width="800px" style="border-radius: 10px; margin-bottom: 20px;">
   <p><b>Yapay Zeka Destekli Bölgesel Uydu Takımı Tasarım ve Karar Destek Platformu</b></p>
 </div>
 
