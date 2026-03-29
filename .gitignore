@@ -1,0 +1,5 @@
+
+# Kuantize modeller ve yapay zeka agirliklari GitHub'a gitmeyecek
+models/
+*.gguf
+.hf_token
