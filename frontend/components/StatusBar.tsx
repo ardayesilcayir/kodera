@@ -1,8 +1,142 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, animate } from 'framer-motion';
-import { usePrismStore } from '@/lib/store';
+import { usePrismStore, SIM_SPEED_MIN, SIM_SPEED_MAX, SIM_SPEED_STEP } from '@/lib/store';
+
+/** YouTube benzeri çift ok — yavaşlat / hızlandır */
+function IconDoubleChevronLeft({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <path
+        d="M11 5l-7 7 7 7M18 5l-7 7 7 7"
+        stroke="currentColor"
+        strokeWidth="2.25"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function IconDoubleChevronRight({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <path
+        d="M13 5l7 7-7 7M6 5l7 7-7 7"
+        stroke="currentColor"
+        strokeWidth="2.25"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function SimSpeedBlock({
+  simulationSpeedMultiplier,
+  adjustSimulationSpeed,
+  setSimulationSpeedMultiplier,
+}: {
+  simulationSpeedMultiplier: number;
+  adjustSimulationSpeed: (direction: -1 | 1) => void;
+  setSimulationSpeedMultiplier: (value: number) => void;
+}) {
+  const [draft, setDraft] = useState(() => simulationSpeedMultiplier.toFixed(2));
+  const focusedRef = useRef(false);
+
+  useEffect(() => {
+    if (!focusedRef.current) {
+      setDraft(simulationSpeedMultiplier.toFixed(2));
+    }
+  }, [simulationSpeedMultiplier]);
+
+  const commitDraft = useCallback(() => {
+    const normalized = draft.replace(',', '.').trim();
+    const n = parseFloat(normalized);
+    if (Number.isFinite(n)) {
+      setSimulationSpeedMultiplier(n);
+      setDraft(Math.min(SIM_SPEED_MAX, Math.max(SIM_SPEED_MIN, n)).toFixed(2));
+    } else {
+      setDraft(simulationSpeedMultiplier.toFixed(2));
+    }
+  }, [draft, setSimulationSpeedMultiplier, simulationSpeedMultiplier]);
+
+  return (
+    <motion.div
+      className="px-3"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 2.2 }}
+    >
+      <div className="font-orbitron mb-1 text-[8px] uppercase tracking-[0.2em] text-[rgba(0,245,255,0.55)]">
+        EARTH · SIM SPEED
+      </div>
+      <div className="sim-speed-panel">
+        <button
+          type="button"
+          aria-label="Simülasyon hızını azalt"
+          disabled={simulationSpeedMultiplier <= SIM_SPEED_MIN}
+          onClick={() => adjustSimulationSpeed(-1)}
+          className="sim-speed-btn"
+        >
+          <IconDoubleChevronLeft />
+        </button>
+
+        <div className="relative z-[1] flex items-center gap-0.5">
+          <input
+            type="text"
+            inputMode="decimal"
+            aria-label="Simülasyon hız çarpanı"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onFocus={() => {
+              focusedRef.current = true;
+            }}
+            onBlur={() => {
+              focusedRef.current = false;
+              commitDraft();
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+            className="sim-speed-input"
+          />
+          <span className="sim-speed-mult" aria-hidden>
+            ×
+          </span>
+        </div>
+
+        <button
+          type="button"
+          aria-label="Simülasyon hızını artır"
+          disabled={simulationSpeedMultiplier >= SIM_SPEED_MAX}
+          onClick={() => adjustSimulationSpeed(1)}
+          className="sim-speed-btn"
+        >
+          <IconDoubleChevronRight />
+        </button>
+      </div>
+      <div className="font-mono-tech mt-1.5 text-[6px] tracking-[0.15em] text-white/30">
+        RANGE {SIM_SPEED_MIN.toFixed(2)}× — {SIM_SPEED_MAX.toFixed(0)}× · STEP {SIM_SPEED_STEP}
+      </div>
+    </motion.div>
+  );
+}
 
 function AnimatedNumber({ target }: { target: number }) {
   const [current, setCurrent] = useState(0);
@@ -27,7 +161,12 @@ function AnimatedNumber({ target }: { target: number }) {
 }
 
 export default function StatusBar() {
-  const { orbitalAssets, signalStrength, powerStatus } = usePrismStore();
+  const orbitalAssets = usePrismStore((s) => s.orbitalAssets);
+  const signalStrength = usePrismStore((s) => s.signalStrength);
+  const powerStatus = usePrismStore((s) => s.powerStatus);
+  const simulationSpeedMultiplier = usePrismStore((s) => s.simulationSpeedMultiplier);
+  const adjustSimulationSpeed = usePrismStore((s) => s.adjustSimulationSpeed);
+  const setSimulationSpeedMultiplier = usePrismStore((s) => s.setSimulationSpeedMultiplier);
   const [utcTime, setUtcTime] = useState('');
   const [tick, setTick] = useState(false);
   const [liveAssets, setLiveAssets] = useState(orbitalAssets);
@@ -104,6 +243,7 @@ export default function StatusBar() {
       className="glass-panel relative overflow-hidden select-none mx-auto"
       style={{
         display: 'flex',
+        flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: 'center',
         gap: '8px',
@@ -159,6 +299,17 @@ export default function StatusBar() {
           )}
         </div>
       ))}
+
+      <div
+        className="h-8 w-px mx-1"
+        style={{ background: 'linear-gradient(180deg, transparent, rgba(0,245,255,0.25), transparent)' }}
+      />
+
+      <SimSpeedBlock
+        simulationSpeedMultiplier={simulationSpeedMultiplier}
+        adjustSimulationSpeed={adjustSimulationSpeed}
+        setSimulationSpeedMultiplier={setSimulationSpeedMultiplier}
+      />
 
       {/* Inner glow gradient */}
       <div className="absolute inset-0 z-[-1] bg-gradient-to-r from-transparent via-[rgba(0,245,255,0.03)] to-transparent pointer-events-none" />

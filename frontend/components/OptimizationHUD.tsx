@@ -2,178 +2,266 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePrismStore } from '@/lib/store';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
-function TacticalBox({ title, children }: { title: string, children: React.ReactNode }) {
+function InfoRow({ label, value, valueColor = '#00f5ff' }: { label: string; value: string; valueColor?: string }) {
   return (
-    <div className="glass-panel relative overflow-hidden mb-8 bg-black/60 backdrop-blur-3xl border border-cyan-500/20 group rounded-xl">
-       {/* Background accent */}
-       <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/[0.05] to-transparent pointer-events-none" />
-       
-       <div className="relative z-10 p-6">
-         <div className="font-orbitron text-[11px] text-cyan-400 font-bold tracking-[5px] uppercase mb-6 flex items-center gap-4">
-           <div className="w-6 h-px bg-cyan-400/40" />
-           {title}
-         </div>
-         <div className="space-y-5">{children}</div>
-       </div>
-
-       {/* Industrial accents */}
-       <div className="absolute top-0 left-0 w-4 h-px bg-cyan-400/60" />
-       <div className="absolute top-0 left-0 h-4 w-px bg-cyan-400/60" />
-       <div className="absolute bottom-0 right-0 w-4 h-px bg-cyan-400/30" />
-       <div className="absolute bottom-0 right-0 h-4 w-px bg-cyan-400/30" />
-    </div>
-  );
-}
-
-function DataRow({ label, value, color = "rgba(255,255,255,1)" }: { label: string, value: string, color?: string }) {
-  return (
-    <div className="flex justify-between items-baseline group py-3 border-b border-white/[0.05] last:border-0 hover:bg-white/[0.03] transition-colors px-2 -mx-2 rounded-lg">
-       <span className="font-mono-tech text-[10px] text-white/50 tracking-[2px] uppercase truncate mr-6">{label}</span>
-       <span className="font-orbitron font-extrabold tracking-tight text-[15px] truncate max-w-[180px]" style={{ color }}>{value}</span>
+    <div className="flex justify-between items-center bg-[rgba(0,10,20,0.5)] border border-[rgba(0,245,255,0.1)] p-2 rounded">
+      <span className="font-mono-tech text-[9px] text-[rgba(0,245,255,0.6)]">{label}</span>
+      <span className="font-mono-tech text-[10px]" style={{ color: valueColor }}>{value}</span>
     </div>
   );
 }
 
 export default function OptimizationHUD() {
-  const { showOptimizationResults, selectedCountry, scanResult, isScanning, resetScan, setShowOptimizationResults, missionMode } = usePrismStore();
+  const { showOptimizationResults, selectedCountry, scanResult, isScanning, scanError, setShowOptimizationResults, missionMode } = usePrismStore();
   const [progress, setProgress] = useState(0);
 
+  const rec = scanResult?.design.recommended;
+  const metrics = rec?.metrics;
+  const req = scanResult?.request;
+  const ai = scanResult?.design.ai_engineering_summary;
+  const explanations = scanResult?.design.explanations ?? [];
+
+  const satsPerPlane = useMemo(() => {
+    if (!rec?.total_satellites_T || !rec?.planes_P) return null;
+    return Math.round(rec.total_satellites_T / rec.planes_P);
+  }, [rec?.total_satellites_T, rec?.planes_P]);
+
   useEffect(() => {
-    let interval: any;
+    let interval: ReturnType<typeof setInterval>;
     if (isScanning) {
       setProgress(0);
       interval = setInterval(() => {
-        setProgress(p => p < 100 ? p + Math.random() * 4 : 100);
-      }, 50);
+        setProgress(p => {
+          if (p < 55) return p + Math.random() * 2.5 + 0.5;
+          if (p < 80) return p + Math.random() * 0.6 + 0.1;
+          if (p < 90) return p + Math.random() * 0.15;
+          return p;
+        });
+      }, 120);
     } else if (scanResult) {
       setProgress(100);
+    } else if (scanError) {
+      setProgress(0);
     }
     return () => clearInterval(interval);
-  }, [isScanning, scanResult]);
+  }, [isScanning, scanResult, scanError]);
 
   return (
     <AnimatePresence>
       {showOptimizationResults && (
         <motion.div
-           className="fixed z-[100] right-[2%] top-1/2 -translate-y-1/2 w-[380px] select-none pointer-events-auto max-h-[95vh] flex flex-col"
-           initial={{ x: 100, opacity: 0, scale: 0.95 }}
-           animate={{ x: 0, opacity: 1, scale: 1 }}
-           exit={{ x: 100, opacity: 0, scale: 0.95 }}
-           transition={{ type: 'spring', damping: 28, stiffness: 200 }}
+          className="glass-panel scanlines relative overflow-hidden select-none"
+          style={{ width: '280px', padding: '32px 24px', maxHeight: '70vh', display: 'flex', flexDirection: 'column' }}
+          initial={{ x: 60, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: 60, opacity: 0 }}
+          transition={{ duration: 1, delay: 0.5, ease: 'easeOut' }}
+          whileHover={{ borderColor: 'rgba(0,245,255,0.6)' }}
         >
-          {/* Main Container with Scroll */}
-          <div className="flex flex-col h-full bg-[#020c18]/70 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-[0_80px_200px_rgba(0,0,0,1)] overflow-hidden">
-            
-            {/* Glossy Header Bar */}
-            <div className="p-7 pb-5 flex justify-between items-center bg-gradient-to-b from-white/[0.08] to-transparent border-b border-white/10 sticky top-0 z-20 backdrop-blur-3xl">
-               <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-3">
-                     <div className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_15px_#00f5ff]" />
-                     <div className="font-orbitron text-[13px] font-black text-white tracking-[7px] uppercase">MISSION_INTEL_SYSTEM</div>
-                  </div>
-                  <div className="font-mono-tech text-[9px] text-cyan-400 font-medium uppercase tracking-[4px]">SECTOR: {selectedCountry?.name || 'GLOBAL'} // LAT: {selectedCountry?.lat.toFixed(2)} // LNG: {selectedCountry?.lng.toFixed(2)}</div>
-               </div>
-               <button 
-                  onClick={() => setShowOptimizationResults(false)}
-                  className="w-12 h-12 flex items-center justify-center rounded-full border border-white/10 hover:border-cyan-400/50 hover:bg-cyan-400/20 text-white/50 hover:text-cyan-400 transition-all group shadow-inner"
-               >
-                  <span className="text-2xl font-light transform group-hover:rotate-90 transition-transform">✕</span>
-               </button>
-            </div>
+          {/* HUD corners */}
+          <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-cyan-400 opacity-70" />
+          <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-cyan-400 opacity-70" />
+          <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-cyan-400 opacity-70" />
+          <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-cyan-400 opacity-70" />
 
-            {/* Scrollable Content */}
-            <div className="p-7 overflow-y-auto no-scrollbar max-h-[calc(95vh-120px)]">
-               
-               {/* High Impact Progress Section */}
-               <div className="mb-8 p-7 bg-cyan-400/[0.05] border border-cyan-400/20 rounded-2xl relative overflow-hidden group shadow-2xl">
-                  <div className="absolute top-0 right-0 p-5">
-                     <div className="flex items-center gap-3 font-mono-tech text-[10px] text-cyan-400 font-bold tracking-[3px]">
-                        <motion.div animate={{ opacity: [1, 0.5, 1] }} transition={{ repeat: Infinity, duration: 1.5 }}>LINK_STABLE</motion.div>
-                        <div className="w-1.5 h-4 bg-cyan-400/30" />
-                        <span>TX: OK</span>
-                     </div>
-                  </div>
-                  
-                  <div className="flex items-baseline gap-2 mb-6">
-                     <motion.div className="text-8xl font-black text-white tabular-nums tracking-tighter drop-shadow-[0_0_40px_#00f5ff70]">
-                        {Math.floor(progress)}
-                     </motion.div>
-                     <div className="text-3xl font-orbitron text-cyan-400 font-bold opacity-60">%</div>
-                  </div>
-
-                  <div className="relative h-2.5 w-full bg-black/60 rounded-full overflow-hidden border border-white/10 shadow-inner">
-                     <motion.div 
-                        className="h-full bg-gradient-to-r from-cyan-600 via-cyan-400 to-white shadow-[0_0_30px_#00f5ff]" 
-                        initial={{ width: 0 }} 
-                        animate={{ width: `${progress}%` }} 
-                        transition={{ duration: 0.5 }}
-                     />
-                     {/* Segment markers */}
-                     <div className="absolute inset-0 flex justify-between px-2 pointer-events-none">
-                        {[...Array(15)].map((_, i) => <div key={i} className="w-px h-full bg-black/40" />)}
-                     </div>
-                  </div>
-                  
-                  <div className="mt-5 flex justify-between font-mono-tech text-[9px] text-cyan-400 font-bold tracking-[5px] uppercase opacity-40">
-                     <span>PARALLEL_CALC_ACTIVE</span>
-                     <span>λ_LATENCY: 0.14MS</span>
-                  </div>
-               </div>
-
-               {/* Mission Profile */}
-               <TacticalBox title="DEPLOYMENT_SUMMARY">
-                  <DataRow label="MISSION_MODE" value={missionMode} color="#00f5ff" />
-                  <DataRow label="ANALYSIS_TYPE" value={scanResult?.mission?.type || "ORBITAL_ASSESSMENT"} />
-                  <DataRow label="CONFIDENCE_LVL" value="ULTIMATUM" color="#00ffcc" />
-                  <DataRow label="HORIZON_SCOPE" value={`${scanResult?.mission?.analysis_horizon_hours || 24} HOURS`} />
-               </TacticalBox>
-
-               {/* Performance Data */}
-               <AnimatePresence>
-                  {(scanResult || progress > 30) && (
-                     <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
-                        <TacticalBox title="REALTIME_METRICS">
-                           <DataRow label="KAPSAMA_ORANI" value={`${((scanResult?.performance?.point_coverage_pct || 0.9998) * 100).toFixed(3)}%`} color="#00ffcc" />
-                           <DataRow label="TEMSIL_SURESI" value={`${scanResult?.performance?.avg_revisit_time_s || '88.4'} SEC`} />
-                           <DataRow label="MAX_GECIKME" value={`${scanResult?.performance?.max_gap_duration_s || '132.1'} SEC`} />
-                           <DataRow label="SYSTEM_LIMIT" value={`${scanResult?.performance?.worst_case_gap_s || '194.5'} SEC`} />
-                        </TacticalBox>
-                     </motion.div>
-                  )}
-               </AnimatePresence>
-
-               {/* Hardware / Constellation info */}
-               <AnimatePresence>
-                  {(scanResult || progress > 60) && (
-                     <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
-                        <TacticalBox title="CONSTELLATION_PARAMS">
-                           <DataRow label="AKTIF_UYDU_SAYISI" value={scanResult?.satellites?.length || '48'} color="#00f5ff" />
-                           <DataRow label="YORUNGE_DUZLEMI" value={scanResult?.parameters?.planes || '6'} />
-                           <DataRow label="DUZLEM_ICI_UYDU" value={scanResult?.parameters?.satellites_per_plane || '8'} />
-                           <DataRow label="IRT_MESAFESI" value={`${(scanResult?.parameters?.altitude_km || 550).toFixed(0)} KM`} />
-                           <DataRow label="YORUNGE_EGIMI" value={`${(scanResult?.parameters?.inclination_deg || 53.0).toFixed(1)}°`} />
-                        </TacticalBox>
-                     </motion.div>
-                  )}
-               </AnimatePresence>
-
-               {/* Optimization Logic */}
-               {scanResult && (
-                  <TacticalBox title="SOLVER_OVERVIEW">
-                     <DataRow label="OPTIMIZATION_GOAL" value={scanResult?.optimization?.primary_goal || "MINIMIZE_GAP"} color="#00ffcc" />
-                     <DataRow label="ALGORITHMIC_MODEL" value="ASYNC_HEURISTIC_V2" />
-                  </TacticalBox>
-               )}
-
-               {/* Footer */}
-               <div className="mt-10 text-center border-t border-white/10 pt-10 pb-6">
-                  <div className="font-orbitron font-black text-[14px] tracking-[12px] text-cyan-400 mb-3 ml-[12px]">PRISM</div>
-                  <div className="font-mono-tech text-[8px] tracking-[5px] uppercase text-white/40">GENESIS_OPTIMIZATION_UPLINK</div>
-               </div>
-            </div>
+          {/* Icon */}
+          <div className="flex justify-center mb-4 relative z-10">
+            <motion.div
+              className="w-12 h-12 rounded-full flex items-center justify-center transition-shadow"
+              style={{
+                border: '1px solid rgba(0,245,255,0.4)',
+                background: 'rgba(0,245,255,0.05)',
+                boxShadow: '0 0 20px rgba(0,245,255,0.2)',
+              }}
+              animate={{
+                boxShadow: scanResult
+                  ? ['0 0 10px rgba(0,255,204,0.2)', '0 0 25px rgba(0,255,204,0.5)', '0 0 10px rgba(0,255,204,0.2)']
+                  : ['0 0 10px rgba(0,245,255,0.2)', '0 0 25px rgba(0,245,255,0.5)', '0 0 10px rgba(0,245,255,0.2)'],
+              }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={scanResult ? '#00ffcc' : '#00f5ff'} strokeWidth="1.5">
+                <circle cx="12" cy="12" r="10" />
+                <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)" />
+                <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(-60 12 12)" />
+                <circle cx="12" cy="12" r="1.5" fill={scanResult ? '#00ffcc' : '#00f5ff'} />
+              </svg>
+            </motion.div>
           </div>
+
+          {/* Label */}
+          <div className="text-center mb-3 relative z-10">
+            <span
+              className="font-orbitron text-xs font-bold tracking-widest text-neon"
+              style={{ fontSize: '11px', letterSpacing: '3px' }}
+            >
+              MISSION INTEL
+            </span>
+          </div>
+
+          {/* Divider */}
+          <div
+            className="w-full h-px mb-4 relative z-10"
+            style={{ background: 'linear-gradient(90deg, transparent, rgba(0,245,255,0.4), transparent)' }}
+          />
+
+          {/* Scrollable Content */}
+          <div className="overflow-y-auto no-scrollbar flex-1 relative z-10">
+
+            {/* Sector info */}
+            <div className="space-y-3 mb-5">
+              <InfoRow label="SECTOR" value={selectedCountry?.name || 'GLOBAL'} />
+              <InfoRow label="MODE" value={missionMode} valueColor="#00ffcc" />
+            </div>
+
+            {/* Progress */}
+            {(isScanning || scanResult || scanError) && (
+              <div className="mb-5">
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="font-mono-tech text-[8px] text-[rgba(0,245,255,0.5)] tracking-[2px] uppercase">PROGRESS</span>
+                  <span className="font-orbitron text-[11px] font-bold" style={{ color: scanError ? '#f87171' : scanResult ? '#00ffcc' : '#00f5ff' }}>
+                    {scanError ? 'ERROR' : `${Math.floor(progress)}%`}
+                  </span>
+                </div>
+                <div className="h-1 w-full rounded-full overflow-hidden bg-[rgba(0,10,20,0.6)] border border-[rgba(0,245,255,0.1)]">
+                  <motion.div
+                    className="h-full rounded-full"
+                    style={{
+                      background: scanError ? '#f87171' : scanResult ? 'linear-gradient(90deg, #059669, #00ffcc)' : 'linear-gradient(90deg, #0891b2, #00f5ff)',
+                      boxShadow: `0 0 8px ${scanError ? '#f87171' : scanResult ? '#00ffcc' : '#00f5ff'}`,
+                    }}
+                    animate={{ width: scanError ? '100%' : `${progress}%` }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </div>
+                <div className="font-mono-tech text-[7px] text-[rgba(0,245,255,0.3)] mt-1.5 tracking-wider">
+                  {isScanning ? 'WALKER_ENUM + COVERAGE_SIM...' : scanResult ? 'OPTIMIZATION_COMPLETE' : scanError ? scanError : 'STANDBY'}
+                </div>
+              </div>
+            )}
+
+            {/* Error */}
+            {scanError && (
+              <div className="mb-5 p-2 rounded bg-[rgba(248,113,113,0.08)] border border-[rgba(248,113,113,0.2)]">
+                <span className="font-mono-tech text-[8px] text-red-400/80 break-words">{scanError}</span>
+              </div>
+            )}
+
+            {/* Loading skeleton */}
+            {isScanning && !scanResult && (
+              <motion.div className="space-y-3 mb-5" initial={{ opacity: 0 }} animate={{ opacity: 0.5 }}>
+                {['SATELLITES', 'ALTITUDE', 'PLANES', 'COVERAGE'].map(k => (
+                  <div key={k} className="flex justify-between items-center bg-[rgba(0,10,20,0.5)] border border-[rgba(0,245,255,0.06)] p-2 rounded">
+                    <span className="font-mono-tech text-[9px] text-[rgba(0,245,255,0.3)]">{k}</span>
+                    <motion.span
+                      className="font-mono-tech text-[10px] text-[rgba(0,245,255,0.2)]"
+                      animate={{ opacity: [0.2, 0.5, 0.2] }}
+                      transition={{ repeat: Infinity, duration: 1.5 }}
+                    >
+                      ···
+                    </motion.span>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+
+            {/* Results */}
+            {scanResult && (
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+                {rec ? (
+                  <>
+                    <div className="mb-1">
+                      <span className="font-mono-tech text-[8px] text-[rgba(0,245,255,0.4)] tracking-[3px] uppercase">CONSTELLATION</span>
+                    </div>
+                    <div className="space-y-3 mb-5">
+                      <InfoRow label="SATELLITES" value={String(rec.total_satellites_T)} />
+                      <InfoRow label="PLANES" value={String(rec.planes_P)} />
+                      <InfoRow label="SATS/PLANE" value={satsPerPlane != null ? String(satsPerPlane) : '—'} />
+                      <InfoRow label="ALTITUDE" value={`${rec.altitude_km.toFixed(0)} KM`} valueColor="#00ffcc" />
+                      <InfoRow label="INCLINATION" value={`${rec.inclination_deg.toFixed(1)}°`} />
+                      <InfoRow label="FAMILY" value={String(rec.orbit_family ?? 'LEO')} valueColor="#00ffcc" />
+                      <InfoRow label="WALKER T/P/F" value={`${rec.total_satellites_T}/${rec.planes_P}/${rec.phase_F}`} />
+                    </div>
+
+                    {metrics && (
+                      <>
+                        <div className="mb-1">
+                          <span className="font-mono-tech text-[8px] text-[rgba(0,245,255,0.4)] tracking-[3px] uppercase">COVERAGE</span>
+                        </div>
+                        <div className="space-y-3 mb-5">
+                          <InfoRow label="MIN_POINT" value={`${(metrics.min_point_coverage * 100).toFixed(2)}%`} valueColor="#00ffcc" />
+                          <InfoRow label="MEAN" value={`${(metrics.mean_point_coverage * 100).toFixed(2)}%`} />
+                          <InfoRow label="MAX_GAP" value={`${metrics.max_gap_seconds.toFixed(0)}s`} />
+                          <InfoRow label="REVISIT_MED" value={`${metrics.revisit_median_seconds.toFixed(0)}s`} />
+                          <InfoRow label="24/7" value={metrics.continuous_24_7_feasible ? 'FEASIBLE' : 'NOT_FEASIBLE'} valueColor={metrics.continuous_24_7_feasible ? '#00ffcc' : '#f87171'} />
+                        </div>
+                      </>
+                    )}
+
+                    <div className="mb-1">
+                      <span className="font-mono-tech text-[8px] text-[rgba(0,245,255,0.4)] tracking-[3px] uppercase">SOLVER</span>
+                    </div>
+                    <div className="space-y-3 mb-5">
+                      <InfoRow label="GOAL" value={req?.optimization?.primary_goal?.replace(/_/g, ' ') || '—'} />
+                      <InfoRow label="COST" value={rec.cost_score.toFixed(4)} />
+                      <InfoRow label="COMPLEXITY" value={rec.complexity_score.toFixed(4)} />
+                    </div>
+                  </>
+                ) : (
+                  <div className="p-2 rounded bg-[rgba(245,158,11,0.08)] border border-[rgba(245,158,11,0.2)] mb-5">
+                    <span className="font-mono-tech text-[8px] text-amber-400/80">NO FEASIBLE SOLUTION</span>
+                  </div>
+                )}
+
+                {ai && (
+                  <div className="mb-5">
+                    <div className="mb-1">
+                      <span className="font-mono-tech text-[8px] text-[rgba(0,245,255,0.4)] tracking-[3px] uppercase">AI SUMMARY</span>
+                    </div>
+                    <div className="bg-[rgba(0,10,20,0.5)] border border-[rgba(0,245,255,0.1)] p-3 rounded">
+                      <p className="font-mono-tech text-[8px] text-[rgba(0,245,255,0.6)] leading-relaxed whitespace-pre-line">{ai}</p>
+                    </div>
+                  </div>
+                )}
+
+                {explanations.length > 0 && (
+                  <div className="mb-3">
+                    <div className="mb-1">
+                      <span className="font-mono-tech text-[8px] text-[rgba(0,245,255,0.4)] tracking-[3px] uppercase">ENGINE LOG</span>
+                    </div>
+                    <div className="bg-[rgba(0,10,20,0.5)] border border-[rgba(0,245,255,0.1)] p-3 rounded space-y-1">
+                      {explanations.slice(0, 5).map((line, i) => (
+                        <div key={i} className="font-mono-tech text-[7px] text-[rgba(0,245,255,0.4)] leading-relaxed">
+                          <span className="text-[rgba(0,245,255,0.25)] mr-1">[{String(i + 1).padStart(2, '0')}]</span>{line}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </div>
+
+          {/* Close button at bottom */}
+          <motion.button
+            className="btn-neon w-full font-orbitron relative z-10 mt-4"
+            style={{ background: 'rgba(0,245,255,0.1)' }}
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            onClick={() => setShowOptimizationResults(false)}
+          >
+            DISMISS
+          </motion.button>
+
+          {/* Animated accent line */}
+          <motion.div
+            className="absolute bottom-0 left-0 h-0.5"
+            style={{ background: 'linear-gradient(90deg, transparent, #00f5ff, transparent)' }}
+            animate={{ width: ['0%', '100%', '0%'] }}
+            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+          />
         </motion.div>
       )}
     </AnimatePresence>

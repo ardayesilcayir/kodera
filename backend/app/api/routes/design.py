@@ -21,7 +21,13 @@ async def generate_constellation(request: OrbitDesignRequest):
         # FastAPI Event Loop kilitlenmemesi için senkron matematik motorunu arka planda havuzda çalıştırır
         payload_dict = request.model_dump() if hasattr(request, 'model_dump') else request.dict()
         result = await run_in_threadpool(OrbitalEngineFacade.run_design_optimization, payload_dict)
-        
+
+        if isinstance(result, dict) and result.get("error"):
+            return {
+                "status": "error",
+                "message": str(result.get("details") or result.get("error")),
+            }
+
         # Fizik motorunun rakamsal verilerini NLP'ye (Gemma) gönderip mühendislik yorumu al
         ai_summary = NLPService.generate_engineering_summary(result, "Constellation Optimization (Walker)")
         

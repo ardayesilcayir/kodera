@@ -40,6 +40,9 @@ function DataRow({ label, value, color = "white", side = 'left' }: { label: stri
 export default function ScanPage() {
   const router = useRouter();
   const { selectedCountry, scanResult, scanError, resetScan } = usePrismStore();
+  const recommended = scanResult?.design.recommended;
+  const orbitFamily =
+    recommended?.orbit_family ?? scanResult?.request?.optimization?.allowed_orbit_families?.[0];
   const [progress, setProgress] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
@@ -91,10 +94,10 @@ export default function ScanPage() {
          <motion.div initial={{ x: -60, opacity: 0 }} animate={{ x: 0, opacity: 1 }}>
             <TacticalBox title="SECTOR_PROFILE">
                <div className="mb-4">
-                  <h2 className="text-2xl font-black text-white tracking-widest uppercase truncate">{scanResult?.constellation_name || selectedCountry?.name || 'GLOBAL'}</h2>
-                  <div className="font-mono-tech text-[9px] text-cyan-400/40 uppercase tracking-[4px]">{scanResult?.region_id || selectedCountry?.region || 'International_Waters'}</div>
+                  <h2 className="text-2xl font-black text-white tracking-widest uppercase truncate">{selectedCountry?.name || 'GLOBAL'}</h2>
+                  <div className="font-mono-tech text-[9px] text-cyan-400/40 uppercase tracking-[4px]">{selectedCountry?.region || 'International_Waters'}</div>
                </div>
-               <DataRow label="Target_Type" value={scanResult?.mission_type || "STRATEGIC"} color="#00ffcc" />
+               <DataRow label="Target_Type" value={scanResult?.request?.mission?.type || 'STRATEGIC'} color="#00ffcc" />
                <DataRow label="Status" value={scanError ? "OFFLINE" : "SECURE"} />
             </TacticalBox>
             <TacticalBox title="GEOSPATIAL">
@@ -117,8 +120,27 @@ export default function ScanPage() {
                </div>
             </TacticalBox>
             <TacticalBox title="ORBIT_DATA" side="right">
-               <DataRow label="Asset_Count" value={scanResult?.satellites?.length || '48'} side="right" />
-               <DataRow label="Orbit_Family" value={scanResult?.optimization?.allowed_orbit_families?.[0] || 'LEO'} color="#00ffcc" side="right" />
+               <DataRow
+                  label="Asset_Count"
+                  value={recommended ? String(recommended.total_satellites_T) : '—'}
+                  side="right"
+               />
+               <DataRow
+                  label="Walker_P_F"
+                  value={recommended ? `${recommended.planes_P} / ${recommended.phase_F}` : '—'}
+                  side="right"
+               />
+               <DataRow
+                  label="Alt_km"
+                  value={recommended ? recommended.altitude_km.toFixed(1) : '—'}
+                  side="right"
+               />
+               <DataRow
+                  label="Inc_deg"
+                  value={recommended ? recommended.inclination_deg.toFixed(2) : '—'}
+                  side="right"
+               />
+               <DataRow label="Orbit_Family" value={String(orbitFamily ?? 'LEO')} color="#00ffcc" side="right" />
             </TacticalBox>
          </motion.div>
       </div>

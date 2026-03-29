@@ -11,7 +11,7 @@ import { usePrismStore } from '@/lib/store';
 import { detectCountry } from '@/lib/countryDetection';
 
 function SceneContent() {
-  const { setSelectedCountry, setCameraZoomed, selectedCountry, isEarthDragging } = usePrismStore();
+  const { setSelectedCountry, setSurfaceTarget, setCameraZoomed, selectedCountry, isEarthDragging } = usePrismStore();
   const earthRef = useRef<THREE.Group>(null);
   const controlsRef = useRef<any>(null);
 
@@ -19,14 +19,30 @@ function SceneContent() {
   const ASYMMETRY_OFFSET = 0;
 
   const handleCountryClick = useCallback((e: any) => {
-    const lat = e.lat;
-    const lng = e.lng;
-    
-    // Find country based on calculated lat/lng
+    if (usePrismStore.getState().isScanning) return;
+
+    const lat = e.lat as number;
+    const lng = e.lng as number;
+
+    usePrismStore.getState().resetScan();
+    usePrismStore.getState().setShowOptimizationResults(false);
+
+    setSurfaceTarget({ lat, lng });
+
     const country = detectCountry(lat, lng);
     setSelectedCountry(country);
     setCameraZoomed(true);
-  }, [setSelectedCountry, setCameraZoomed]);
+  }, [setSelectedCountry, setSurfaceTarget, setCameraZoomed]);
+
+  const handleMiss = useCallback(() => {
+    const s = usePrismStore.getState();
+    if (s.isScanning || !s.selectedCountry) return;
+    s.setSelectedCountry(null);
+    s.setSurfaceTarget(null);
+    s.setCameraZoomed(false);
+    s.setShowOptimizationResults(false);
+    s.resetScan();
+  }, []);
 
   useFrame((state, delta) => {
     // Intentional empty frame for future camera/composition overrides if needed
@@ -40,8 +56,8 @@ function SceneContent() {
 
       <Stars radius={300} depth={60} count={20000} factor={7} saturation={0} fade speed={1} />
 
-      {/* Global Centered Group - Reduced further for ultimate elegance */}
-      <group ref={earthRef} position={[ASYMMETRY_OFFSET, -0.1, 0]} scale={1.4}>
+      {/* Global Centered Group */}
+      <group ref={earthRef} position={[ASYMMETRY_OFFSET, -0.1, 0]} scale={1.4} onPointerMissed={handleMiss}>
          <Earth onCountryClick={handleCountryClick} />
          <OrbitalSystem />
       </group>

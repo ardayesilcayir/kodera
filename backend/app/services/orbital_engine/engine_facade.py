@@ -1,6 +1,5 @@
 import os
 import sys
-import json
 from typing import Dict, Any
 
 # =========================================================================
@@ -22,8 +21,11 @@ if MANEUVER_DIR not in sys.path:
 try:
     from optimizer_service import optimize_regional_coverage
     from request_models import OrbitDesignRequest
-    from candidate_models import CandidateGenerationInput
-    from optimizer_models import DesignerParams
+    from default_pipeline import (
+        candidate_input_from_request,
+        default_designer_params,
+        design_result_to_dict,
+    )
 except ImportError as e:
     print(f"Design Module yüklenemedi: {e}")
 
@@ -50,16 +52,11 @@ class OrbitalEngineFacade:
         Gerçekleşecek işlemler: Walker Dizilimi, Hohmann Kapsama Analizi.
         """
         try:
-            # Pydantic modellerine parse işlemi
             request = OrbitDesignRequest(**payload)
-            cand_input = CandidateGenerationInput()
-            params = DesignerParams()
-            
-            # Motor çalışıyor
+            cand_input = candidate_input_from_request(request)
+            params = default_designer_params()
             result = optimize_regional_coverage(request, cand_input, params)
-            
-            # Sonucu JSON serileştirilebilir bir dict'e çevirip dönüyoruz
-            return result.model_dump() if hasattr(result, 'model_dump') else result.dict()
+            return design_result_to_dict(result)
         
         except Exception as e:
             return {"error": "Tasarım motorunda hata", "details": str(e)}

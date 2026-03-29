@@ -3,3 +3,14 @@
 models/
 *.gguf
 .hf_token
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Environment secrets
+backend/.env
+
+# Node
+node_modules/

@@ -154,14 +154,21 @@ export default function Home() {
           country={selectedCountry}
           onClose={() => {
             setSelectedCountry(null);
+            usePrismStore.getState().setSurfaceTarget(null);
             usePrismStore.getState().setCameraZoomed(false);
             usePrismStore.getState().setShowOptimizationResults(false);
+            usePrismStore.getState().resetScan();
           }}
         />
       </div>
 
-      {/* Right Side Optimization HUD */}
-      <OptimizationHUD />
+      {/* Right Panel: Mission Intel — mirrors left ProfilePanel */}
+      <div
+        className="absolute z-20"
+        style={{ right: '3%', top: '50%', transform: 'translateY(-55%)' }}
+      >
+        <OptimizationHUD />
+      </div>
 
       {/* Integrated Tactical HUD Overlay */}
 

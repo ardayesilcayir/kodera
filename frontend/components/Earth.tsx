@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useRef, useMemo, useCallback } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
 import { useTexture, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
 import { usePrismStore } from '@/lib/store';
 import { pointToLatLng } from '@/lib/countryDetection';
+import { EARTH_ROTATION_RAD_S, VISUAL_TIME_SCALE } from '@/lib/walkerOrbit';
 
 // Enhanced Atmosphere Shaders
 const atmosphereVertexShader = `
@@ -114,43 +115,13 @@ function RegionHighlight({ country }: { country: any }) {
 
 
 
-function SatelliteOrbits() {
-  const orbits = useMemo(() => [
-    { radius: 1.4, speed: 0.1, color: '#00ccff', inclination: 0.5, phase: 0 },
-    { radius: 1.6, speed: -0.06, color: '#00ffaa', inclination: -0.4, phase: 2 },
-  ], []);
-
-  const satsRef = useRef<THREE.Group[]>([]);
-
-  useFrame((state) => {
-    orbits.forEach((orbit, i) => {
-      if (satsRef.current[i]) {
-        const time = state.clock.elapsedTime * orbit.speed + orbit.phase;
-        satsRef.current[i].position.set(Math.cos(time) * orbit.radius, 0, Math.sin(time) * orbit.radius);
-      }
-    });
-  });
-
-  return (
-    <group>
-      {orbits.map((o, i) => (
-        <group key={i} rotation={[o.inclination, 0, o.phase]}>
-          <mesh rotation={[Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[o.radius, o.radius + 0.001, 128]} />
-            <meshBasicMaterial color={o.color} transparent opacity={0.1} />
-          </mesh>
-          <group ref={el => { if (el) satsRef.current[i] = el; }}>
-             <mesh><sphereGeometry args={[0.007, 8, 8]} /><meshBasicMaterial color={o.color} /></mesh>
-          </group>
-        </group>
-      ))}
-    </group>
-  );
-}
 
 export default function Earth({ onCountryClick }: EarthProps) {
   const earthRef = useRef<THREE.Mesh>(null);
-  const { setEarthHovered, selectedCountry, isEarthDragging } = usePrismStore();
+  const setEarthHovered = usePrismStore((s) => s.setEarthHovered);
+  const selectedCountry = usePrismStore((s) => s.selectedCountry);
+  const isEarthDragging = usePrismStore((s) => s.isEarthDragging);
+  const simulationSpeedMultiplier = usePrismStore((s) => s.simulationSpeedMultiplier);
   
   // High-Res Cinematic Textures
   const [dayTexture, nightTexture, cloudTexture] = useTexture([
@@ -187,12 +158,11 @@ export default function Earth({ onCountryClick }: EarthProps) {
     });
   }, []);
 
-  useFrame((state, delta) => {
+  useFrame((_, delta) => {
     if (!earthRef.current || selectedCountry) return;
-    
-    // Smooth auto-rotation only when not dragging
+
     if (!isEarthDragging) {
-      earthRef.current.rotateY(delta * 0.05);
+      earthRef.current.rotateY(delta * EARTH_ROTATION_RAD_S * VISUAL_TIME_SCALE * simulationSpeedMultiplier);
     }
   });
 
@@ -230,7 +200,6 @@ export default function Earth({ onCountryClick }: EarthProps) {
       >
         <primitive object={earthMaterial} attach="material" />
         <RegionHighlight country={selectedCountry} />
-        <SatelliteOrbits />
       </Sphere>
     </group>
   );
