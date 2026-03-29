@@ -99,8 +99,60 @@ def is_link_accessible(
     """
     if not is_visible(satellite_ecef_m, ground_ecef_m, min_elevation_deg):
         return False
-    na = nadir_angle_deg(satellite_ecef_m, ground_ecef_m)
-    return na <= float(max_nadir_angle_deg) + 1e-9
+    nadir = nadir_angle_deg(satellite_ecef_m, ground_ecef_m)
+    return nadir <= float(max_nadir_angle_deg)
+
+
+def is_link_accessible_batch(
+    satellite_ecef_m: NDArray[np.float64],
+    ground_ecef_m_batch: NDArray[np.float64],
+    ground_up_unit_batch: NDArray[np.float64],
+    min_elevation_deg: float,
+    max_nadir_angle_deg: float,
+) -> NDArray[np.bool_]:
+    """
+    Vectorized version of is_link_accessible for multiple ground points.
+    
+    Args:
+        satellite_ecef_m: (3,) satellite position in ECEF [m]
+        ground_ecef_m_batch: (N, 3) ground positions in ECEF [m]
+        ground_up_unit_batch: (N, 3) outward normals at ground positions
+        min_elevation_deg: min elevation angle [deg]
+        max_nadir_angle_deg: max nadir angle [deg]
+        
+    Returns:
+        (N,) boolean mask
+    """
+    if ground_ecef_m_batch.shape[0] == 0:
+        return np.array([], dtype=np.bool_)
+
+    # 1. Elevation Check
+    los = satellite_ecef_m - ground_ecef_m_batch # (N, 3)
+    dist = np.linalg.norm(los, axis=1)
+    # Avoid division by zero
+    dist = np.where(dist < 1e-6, 1.0, dist)
+    u_los = los / dist[:, np.newaxis]
+    
+    sin_el = np.sum(u_los * ground_up_unit_batch, axis=1)
+    el_deg = np.degrees(np.arcsin(np.clip(sin_el, -1.0, 1.0)))
+    mask_el = el_deg >= float(min_elevation_deg)
+    
+    # 2. Nadir Check
+    r_sat = np.linalg.norm(satellite_ecef_m)
+    if r_sat < 1.0:
+        return np.zeros(ground_ecef_m_batch.shape[0], dtype=np.bool_)
+        
+    nadir_vec = -satellite_ecef_m / r_sat
+    los_to_gnd = ground_ecef_m_batch - satellite_ecef_m
+    dist_to_gnd = np.linalg.norm(los_to_gnd, axis=1)
+    dist_to_gnd = np.where(dist_to_gnd < 1e-3, 1.0, dist_to_gnd)
+    u_to_gnd = los_to_gnd / dist_to_gnd[:, np.newaxis]
+    
+    cos_nadir = np.sum(u_to_gnd * nadir_vec, axis=1)
+    nadir_deg = np.degrees(np.arccos(np.clip(cos_nadir, -1.0, 1.0)))
+    mask_nadir = nadir_deg <= float(max_nadir_angle_deg)
+    
+    return mask_el & mask_nadir
 
 
 def elevation_angle_deg_batch(

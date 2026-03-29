@@ -21,13 +21,13 @@ from candidate_models import (
 )
 from coverage_objectives import mission_coverage_feasible, mission_infeasibility_reason
 from coverage_service import compute_coverage_metrics
-from geo_utils import llh_to_ecef
+from geo_utils import llh_to_ecef, ecef_position_to_geodetic_up
 from orbit_family_service import generate_walker_candidates
 from optimizer_models import CandidateEvaluation, DesignResult, DesignerParams
 from propagator_service import propagate_keplerian_ecef_m
 from region_service import RegionGeometry, resolve_region
 from request_models import OrbitDesignRequest, RegionPointRadius, RegionPolygon
-from visibility_service import effective_nadir_limit_deg, is_link_accessible
+from visibility_service import effective_nadir_limit_deg, is_link_accessible, is_link_accessible_batch
 
 from access_duration_filter import apply_min_access_duration_mask
 from footprint_prefilter import prune_candidate_by_footprint
@@ -116,9 +116,11 @@ def _simulate_visibility_matrix(
     out = np.zeros((n_t, n_pts), dtype=np.bool_)
 
     ground_ecef = np.empty((n_pts, 3), dtype=np.float64)
+    ground_up = np.empty((n_pts, 3), dtype=np.float64)
     for j in range(n_pts):
         lon, lat = float(grid_lon_lat[j, 0]), float(grid_lon_lat[j, 1])
         ground_ecef[j, :] = llh_to_ecef(lat, lon, 0.0)
+        ground_up[j, :] = ecef_position_to_geodetic_up(ground_ecef[j, 0], ground_ecef[j, 1], ground_ecef[j, 2])
 
     epoch = candidate.epoch_seconds_tai
     sats = candidate.satellites
@@ -132,16 +134,21 @@ def _simulate_visibility_matrix(
                 propagation_model=designer_params.propagation_model,
                 earth_rotation_model=designer_params.earth_rotation_model,
             )
-            for j in range(n_pts):
-                if out[ti, j]:
-                    continue
-                if is_link_accessible(
-                    r_sat,
-                    ground_ecef[j],
-                    min_elevation_deg,
-                    max_nadir_angle_deg,
-                ):
-                    out[ti, j] = True
+            
+            # Vectorized visibility check for all points at once
+            mask = is_link_accessible_batch(
+                r_sat,
+                ground_ecef,
+                ground_up,
+                min_elevation_deg,
+                max_nadir_angle_deg
+            )
+            out[ti, :] |= mask
+            
+            # Optimization: If all points are covered at this time step, skip remaining satellites
+            if np.all(out[ti, :]):
+                break
+                
     return apply_min_access_duration_mask(out, time_step_seconds, min_access_duration_s)
 
 
