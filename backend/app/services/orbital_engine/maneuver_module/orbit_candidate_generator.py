@@ -26,11 +26,11 @@ import math
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
-from satellite_models import (
+from .satellite_models import (
     OrbitalState, MissionConstraints, R_EARTH, DEG_TO_RAD, RAD_TO_DEG,
     EARTH_ROTATION_DEG_PER_SEC, orbital_period,
 )
-from target_region import TargetRegion
+from .target_region import TargetRegion
 
 
 # ──────────────────────────────────────────────

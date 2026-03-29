@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from satellite_models import (
+from .satellite_models import (
     OrbitalState, Satellite, RepositionPlan, TransferSummary,
     CoverageMetrics, SystemImpactAnalysis, RiskAnalysis,
 )

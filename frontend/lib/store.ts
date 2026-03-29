@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { OrbitDesignRequestBody, ScanSession } from '@/lib/orbitTypes';
+import type { ManeuverResultData } from '@/lib/maneuverTypes';
 
 export interface CountryData {
   name: string;
@@ -10,7 +11,6 @@ export interface CountryData {
   region: string;
 }
 
-/** Raycast’ten gelen tam tıklama (generate `region` merkezi — yuvarlama yok). */
 export interface SurfaceTarget {
   lat: number;
   lng: number;
@@ -18,7 +18,6 @@ export interface SurfaceTarget {
 
 export type MissionType = 'BALANCED' | 'EMERGENCY_COMMS' | 'EARTH_OBSERVATION' | 'BROADCAST';
 
-/** Dünya dönüşü + uydu yörünge animasyonları ortak çarpan (1 = varsayılan). */
 export const SIM_SPEED_MIN = 0.25;
 export const SIM_SPEED_MAX = 50;
 export const SIM_SPEED_STEP = 0.25;
@@ -29,7 +28,6 @@ interface PrismState {
   isEarthDragging: boolean;
   earthScale: number;
   selectedCountry: CountryData | null;
-  /** Son tıklanan yüzey noktası; `/design/generate` region merkezi buradan gider. */
   surfaceTarget: SurfaceTarget | null;
   cameraZoomed: boolean;
   showClouds: boolean;
@@ -44,16 +42,22 @@ interface PrismState {
   powerStatus: string;
   missionMode: MissionType;
 
-  // Scan states
+  // Scan states (generate module)
   isScanning: boolean;
   scanResult: ScanSession | null;
   scanError: string | null;
 
-  // Satellite
+  // Satellite (3D interaction)
   satelliteActive: boolean;
   activeSatelliteId: number;
 
-  /** Simülasyon zaman ölçeği: Dünya dönüşü ve uydu mean-motion görsel hızı. */
+  // Maneuver module
+  selectedFleetSatId: string | null;
+  maneuverTarget: SurfaceTarget | null;
+  maneuverResult: ManeuverResultData | null;
+  isManeuverRunning: boolean;
+  maneuverError: string | null;
+
   simulationSpeedMultiplier: number;
 
   // Actions
@@ -73,6 +77,12 @@ interface PrismState {
   resetScan: () => void;
   adjustSimulationSpeed: (direction: -1 | 1) => void;
   setSimulationSpeedMultiplier: (value: number) => void;
+
+  // Maneuver actions
+  selectFleetSat: (id: string | null) => void;
+  setManeuverTarget: (target: SurfaceTarget | null) => void;
+  runManeuver: (params: { missionType: string; optimizationMode: string; maxTransferHours: number; targetRadiusKm: number }) => Promise<void>;
+  resetManeuver: () => void;
 }
 
 export const usePrismStore = create<PrismState>((set) => ({
@@ -96,6 +106,13 @@ export const usePrismStore = create<PrismState>((set) => ({
   activeSatelliteId: 0,
   simulationSpeedMultiplier: 1,
 
+  // Maneuver defaults
+  selectedFleetSatId: null,
+  maneuverTarget: null,
+  maneuverResult: null,
+  isManeuverRunning: false,
+  maneuverError: null,
+
   setEarthHovered: (hovered) => set({ isEarthHovered: hovered }),
   setEarthDragging: (dragging) => set({ isEarthDragging: dragging }),
   setEarthScale: (scale) => set({ earthScale: scale }),
@@ -108,7 +125,7 @@ export const usePrismStore = create<PrismState>((set) => ({
   setSatelliteActive: (active) => set({ satelliteActive: active }),
   setActiveSatelliteId: (id) => set({ activeSatelliteId: id }),
   setMissionMode: (mode) => set({ missionMode: mode }),
-  
+
   runScan: async () => {
     const state = usePrismStore.getState();
     const lat = state.surfaceTarget?.lat ?? state.selectedCountry?.lat;
@@ -116,17 +133,12 @@ export const usePrismStore = create<PrismState>((set) => ({
     if (lat == null || lon == null) return;
 
     set({ isScanning: true, scanError: null, scanResult: null });
-    
+
     try {
       const { api } = await import('@/lib/api');
-      
+
       const payload: OrbitDesignRequestBody = {
-        region: {
-          mode: 'point_radius',
-          lat,
-          lon,
-          radius_km: 500,
-        },
+        region: { mode: 'point_radius', lat, lon, radius_km: 500 },
         mission: {
           type: state.missionMode,
           continuous_coverage_required: false,
@@ -144,10 +156,7 @@ export const usePrismStore = create<PrismState>((set) => ({
           min_access_duration_s: 60,
         },
         optimization: {
-          primary_goal:
-            state.missionMode === 'EMERGENCY_COMMS'
-              ? 'MINIMIZE_MAX_GAP_DURATION'
-              : 'MINIMIZE_SATELLITE_COUNT',
+          primary_goal: state.missionMode === 'EMERGENCY_COMMS' ? 'MINIMIZE_MAX_GAP_DURATION' : 'MINIMIZE_SATELLITE_COUNT',
           secondary_goals: ['MINIMIZE_PROPULSION_BUDGET'],
           allowed_orbit_families: ['LEO'],
           max_satellites: 12,
@@ -164,16 +173,57 @@ export const usePrismStore = create<PrismState>((set) => ({
 
   resetScan: () => set({ scanResult: null, scanError: null, isScanning: false }),
 
+  // Maneuver actions
+  selectFleetSat: (id) => set({ selectedFleetSatId: id, maneuverTarget: null, maneuverResult: null, maneuverError: null }),
+
+  setManeuverTarget: (target) => set({ maneuverTarget: target }),
+
+  runManeuver: async (params) => {
+    const state = usePrismStore.getState();
+    const satId = state.selectedFleetSatId;
+    const target = state.maneuverTarget;
+    if (!satId || !target) return;
+
+    const { FLEET_SATELLITES } = await import('@/lib/satellites');
+    const sat = FLEET_SATELLITES.find((s) => s.id === satId);
+    if (!sat) return;
+
+    set({ isManeuverRunning: true, maneuverError: null, maneuverResult: null });
+
+    try {
+      const { api } = await import('@/lib/api');
+
+      const result = await api.optimizeManeuver({
+        satellite_id: sat.id,
+        satellite_name: sat.name,
+        current_altitude_km: sat.altitude_km,
+        current_inclination_deg: sat.inclination_deg,
+        current_raan_deg: sat.raan_deg,
+        current_phase_deg: sat.phase_deg,
+        satellite_mission_type: sat.mission_type,
+        mission_type: params.missionType,
+        target_lat: target.lat,
+        target_lon: target.lng,
+        target_radius_km: params.targetRadiusKm,
+        optimization_mode: params.optimizationMode,
+        max_transfer_time_hours: params.maxTransferHours,
+      });
+
+      set({ maneuverResult: result, isManeuverRunning: false });
+    } catch (e: any) {
+      set({ maneuverError: e.message || 'Maneuver failed', isManeuverRunning: false });
+    }
+  },
+
+  resetManeuver: () => set({ maneuverResult: null, maneuverError: null, isManeuverRunning: false }),
+
   adjustSimulationSpeed: (direction) =>
-    set((s) => {
-      const next = s.simulationSpeedMultiplier + direction * SIM_SPEED_STEP;
-      return {
-        simulationSpeedMultiplier: Math.min(SIM_SPEED_MAX, Math.max(SIM_SPEED_MIN, next)),
-      };
-    }),
+    set((s) => ({
+      simulationSpeedMultiplier: Math.min(SIM_SPEED_MAX, Math.max(SIM_SPEED_MIN, s.simulationSpeedMultiplier + direction * SIM_SPEED_STEP)),
+    })),
 
   setSimulationSpeedMultiplier: (value) =>
-    set((s) => {
+    set(() => {
       const n = Number(value);
       if (!Number.isFinite(n)) return {};
       return { simulationSpeedMultiplier: Math.min(SIM_SPEED_MAX, Math.max(SIM_SPEED_MIN, n)) };

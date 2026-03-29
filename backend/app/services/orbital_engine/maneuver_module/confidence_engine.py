@@ -15,11 +15,11 @@ import math
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-from satellite_models import (
+from .satellite_models import (
     OrbitalState, Satellite, TransferSummary, MissionConstraints,
     RepositionPlan,
 )
-from simulation_state import SimulationState
+from .simulation_state import SimulationState
 
 
 # ──────────────────────────────────────────────

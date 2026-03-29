@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import List, Optional, Tuple
 
-from satellite_models import Satellite, OrbitalState
+from .satellite_models import Satellite, OrbitalState
 
 
 # ──────────────────────────────────────────────

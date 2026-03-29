@@ -19,13 +19,19 @@ function SceneContent() {
   const ASYMMETRY_OFFSET = 0;
 
   const handleCountryClick = useCallback((e: any) => {
-    if (usePrismStore.getState().isScanning) return;
+    const state = usePrismStore.getState();
+    if (state.isScanning || state.isManeuverRunning) return;
 
     const lat = e.lat as number;
     const lng = e.lng as number;
 
-    usePrismStore.getState().resetScan();
-    usePrismStore.getState().setShowOptimizationResults(false);
+    if (state.selectedFleetSatId) {
+      state.setManeuverTarget({ lat, lng });
+      return;
+    }
+
+    state.resetScan();
+    state.setShowOptimizationResults(false);
 
     setSurfaceTarget({ lat, lng });
 
@@ -36,12 +42,15 @@ function SceneContent() {
 
   const handleMiss = useCallback(() => {
     const s = usePrismStore.getState();
-    if (s.isScanning || !s.selectedCountry) return;
-    s.setSelectedCountry(null);
-    s.setSurfaceTarget(null);
-    s.setCameraZoomed(false);
-    s.setShowOptimizationResults(false);
-    s.resetScan();
+    if (s.isScanning || s.isManeuverRunning) return;
+
+    if (s.selectedCountry) {
+      s.setSelectedCountry(null);
+      s.setSurfaceTarget(null);
+      s.setCameraZoomed(false);
+      s.setShowOptimizationResults(false);
+      s.resetScan();
+    }
   }, []);
 
   useFrame((state, delta) => {

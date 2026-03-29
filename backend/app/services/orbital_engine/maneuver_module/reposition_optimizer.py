@@ -31,24 +31,24 @@ import math
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
-from satellite_models import (
+from .satellite_models import (
     OrbitalState, Satellite, MissionConstraints, TransferSummary,
     CoverageMetrics, SystemImpactAnalysis, RiskAnalysis,
     RepositionPlan, RepositionResult,
     hohmann_delta_v, hohmann_transfer_time, inclination_change_delta_v,
     combined_plane_change_delta_v, orbital_velocity,
 )
-from simulation_state import SimulationState
-from target_region import TargetRegion
-from orbit_candidate_generator import generate_candidates
-from coverage_engine import compute_full_coverage
-from system_interaction_analysis import compute_system_interaction
-from risk_engine import compute_total_risk
-from explanation_engine import (
+from .simulation_state import SimulationState
+from .target_region import TargetRegion
+from .orbit_candidate_generator import generate_candidates
+from .coverage_engine import compute_full_coverage
+from .system_interaction_analysis import compute_system_interaction
+from .risk_engine import compute_total_risk
+from .explanation_engine import (
     generate_plan_explanation, generate_comparison_explanation,
     generate_limitation_notes,
 )
-from confidence_engine import (
+from .confidence_engine import (
     compute_feasibility_score, compute_confidence_score,
 )
 
@@ -164,7 +164,7 @@ def compute_transfer_cost(
         )
     else:
         # For pure plane changes, estimate time as a fraction of orbit period
-        from satellite_models import orbital_period
+        from .satellite_models import orbital_period
         transfer_time_s = orbital_period(current_orbit.altitude_km) * 0.5
 
     # Add time for RAAN drift (Mode A: very rough estimate)

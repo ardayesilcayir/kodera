@@ -17,10 +17,10 @@ from __future__ import annotations
 import math
 from typing import List, Optional
 
-from satellite_models import (
+from .satellite_models import (
     OrbitalState, Satellite, TransferSummary, R_EARTH, DEG_TO_RAD,
 )
-from simulation_state import (
+from .simulation_state import (
     SimulationState, DegradationZone, RiskZone,
 )
 

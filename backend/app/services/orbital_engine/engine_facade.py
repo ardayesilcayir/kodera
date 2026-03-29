@@ -1,5 +1,6 @@
 import os
 import sys
+from dataclasses import asdict
 from typing import Dict, Any
 
 # =========================================================================
@@ -31,10 +32,12 @@ except ImportError as e:
 
 # --- Feature 2: Maneuver Module Imports ---
 try:
-    from reposition_optimizer import optimize_reposition
-    from satellite_models import Satellite, MissionConstraints
-    from simulation_state import SimulationState
-    from target_region import TargetRegion
+    from app.services.orbital_engine.maneuver_module import optimize_reposition
+    from app.services.orbital_engine.maneuver_module.satellite_models import (
+        Satellite, SatelliteCapabilities, MissionConstraints, OrbitalState,
+    )
+    from app.services.orbital_engine.maneuver_module.simulation_state import SimulationState
+    from app.services.orbital_engine.maneuver_module.target_region import TargetRegion
 except ImportError as e:
     print(f"Maneuver Module yüklenemedi: {e}")
 
@@ -82,7 +85,7 @@ class OrbitalEngineFacade:
                 constraints=constraints
             )
             
-            return result.model_dump() if hasattr(result, 'model_dump') else result.dict()
+            return asdict(result)
             
         except Exception as e:
             return {"error": "Manevra motorunda hata", "details": str(e)}

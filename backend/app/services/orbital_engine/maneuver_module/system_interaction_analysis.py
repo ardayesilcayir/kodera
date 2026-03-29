@@ -19,9 +19,9 @@ import math
 from dataclasses import dataclass
 from typing import List, Optional
 
-from satellite_models import OrbitalState, Satellite, R_EARTH, DEG_TO_RAD
-from target_region import TargetRegion, haversine_distance, sample_region_points
-from coverage_engine import (
+from .satellite_models import OrbitalState, Satellite, R_EARTH, DEG_TO_RAD
+from .target_region import TargetRegion, haversine_distance, sample_region_points
+from .coverage_engine import (
     compute_footprint_radius_km,
     compute_target_coverage,
     compute_ground_track,

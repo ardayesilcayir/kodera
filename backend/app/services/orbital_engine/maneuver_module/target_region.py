@@ -23,7 +23,7 @@ import random
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
-from satellite_models import R_EARTH, DEG_TO_RAD, RAD_TO_DEG
+from .satellite_models import R_EARTH, DEG_TO_RAD, RAD_TO_DEG
 
 
 # ──────────────────────────────────────────────

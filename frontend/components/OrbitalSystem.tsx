@@ -5,6 +5,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Line } from '@react-three/drei';
 import { usePrismStore } from '@/lib/store';
+import { FLEET_SATELLITES, type FleetSatellite } from '@/lib/satellites';
 import {
   walkerDeltaSlots,
   circularOrbitPositionThreeJs,
@@ -127,14 +128,7 @@ function ConstellationFromScan() {
   return (
     <group>
       {planeRings.map((pts, pi) => (
-        <Line
-          key={`ring-${pi}`}
-          points={pts}
-          color="#00f5ff"
-          lineWidth={0.6}
-          transparent
-          opacity={0.22}
-        />
+        <Line key={`ring-${pi}`} points={pts} color="#00f5ff" lineWidth={0.6} transparent opacity={0.22} />
       ))}
       {slots.map((slot, i) => (
         <WalkerSatelliteMesh
@@ -152,61 +146,138 @@ function ConstellationFromScan() {
   );
 }
 
-/**
- * Pre-optimized realistic constellation: 3 LEO satellites across 2 planes.
- * Plane 1 (inc 53°, alt 550km): 2 sats — LEO comm relay
- * Plane 2 (inc 97.4°, alt 780km): 1 sat — SSO observation
- */
-function DefaultConstellation() {
+function FleetSatelliteMesh({ sat, highlighted }: { sat: FleetSatellite; highlighted: boolean }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const Mref = useRef(THREE.MathUtils.degToRad(sat.phase_deg));
   const simulationSpeedMultiplier = usePrismStore((s) => s.simulationSpeedMultiplier);
+  const selectedCountry = usePrismStore((s) => s.selectedCountry);
+  const isEarthDragging = usePrismStore((s) => s.isEarthDragging);
+  const selectFleetSat = usePrismStore((s) => s.selectFleetSat);
+  const selectedFleetSatId = usePrismStore((s) => s.selectedFleetSatId);
+  const maneuverResult = usePrismStore((s) => s.maneuverResult);
+  const [hovered, setHovered] = useState(false);
 
-  const spec = useMemo(() => {
-    const plane1Alt = 550;
-    const plane1Inc = THREE.MathUtils.degToRad(53);
-    const plane1Raan = 0;
-    const plane1R = altitudeKmToSceneRadius(plane1Alt);
-    const plane1MM = meanMotionRadPerSec(plane1Alt);
-    const plane1Ring = orbitRingPointsThreeJs(plane1R, plane1Inc, plane1Raan, 96);
+  const hasNewOrbit = highlighted && maneuverResult?.best_plan?.target_orbit;
+  const targetOrbit = maneuverResult?.best_plan?.target_orbit;
 
-    const plane2Alt = 780;
-    const plane2Inc = THREE.MathUtils.degToRad(97.4);
-    const plane2Raan = Math.PI * 0.6;
-    const plane2R = altitudeKmToSceneRadius(plane2Alt);
-    const plane2MM = meanMotionRadPerSec(plane2Alt);
-    const plane2Ring = orbitRingPointsThreeJs(plane2R, plane2Inc, plane2Raan, 96);
+  const baseR = useMemo(() => altitudeKmToSceneRadius(sat.altitude_km), [sat.altitude_km]);
+  const baseInc = useMemo(() => THREE.MathUtils.degToRad(sat.inclination_deg), [sat.inclination_deg]);
+  const baseRaan = useMemo(() => THREE.MathUtils.degToRad(sat.raan_deg), [sat.raan_deg]);
+  const baseMM = useMemo(() => meanMotionRadPerSec(sat.altitude_km), [sat.altitude_km]);
 
-    return {
-      sats: [
-        { rScene: plane1R, incRad: plane1Inc, raanRad: plane1Raan, M0: 0, mm: plane1MM, color: 0x00f5ff },
-        { rScene: plane1R, incRad: plane1Inc, raanRad: plane1Raan, M0: Math.PI, mm: plane1MM, color: 0x00f5ff },
-        { rScene: plane2R, incRad: plane2Inc, raanRad: plane2Raan, M0: Math.PI * 0.5, mm: plane2MM, color: 0x00ffcc },
-      ],
-      rings: [
-        { pts: plane1Ring, color: '#00f5ff' },
-        { pts: plane2Ring, color: '#00ffcc' },
-      ],
-    };
+  const newR = hasNewOrbit ? altitudeKmToSceneRadius(targetOrbit!.altitude_km) : baseR;
+  const newInc = hasNewOrbit ? THREE.MathUtils.degToRad(targetOrbit!.inclination_deg) : baseInc;
+  const newRaan = hasNewOrbit ? THREE.MathUtils.degToRad(targetOrbit!.raan_deg) : baseRaan;
+  const newMM = hasNewOrbit ? meanMotionRadPerSec(targetOrbit!.altitude_km) : baseMM;
+
+  const lerpR = useRef(baseR);
+  const lerpInc = useRef(baseInc);
+  const lerpRaan = useRef(baseRaan);
+  const lerpMM = useRef(baseMM);
+
+  useFrame((_, delta) => {
+    if (!groupRef.current) return;
+
+    const lerpSpeed = delta * 0.8;
+    lerpR.current += (newR - lerpR.current) * lerpSpeed;
+    lerpInc.current += (newInc - lerpInc.current) * lerpSpeed;
+    lerpRaan.current += (newRaan - lerpRaan.current) * lerpSpeed;
+    lerpMM.current += (newMM - lerpMM.current) * lerpSpeed;
+
+    const paused = !!selectedCountry || isEarthDragging;
+    if (!paused) {
+      Mref.current += lerpMM.current * delta * VISUAL_TIME_SCALE * simulationSpeedMultiplier;
+      if (Mref.current > Math.PI * 2) Mref.current -= Math.PI * 2;
+    }
+
+    const pos = circularOrbitPositionThreeJs(lerpR.current, lerpInc.current, lerpRaan.current, Mref.current);
+    groupRef.current.position.copy(pos);
+    groupRef.current.lookAt(0, 0, 0);
+    groupRef.current.rotateY(Math.PI);
+
+    const targetScale = highlighted || hovered ? 1.8 : 1.0;
+    groupRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), delta * 5);
+  });
+
+  const bodyColor = highlighted ? 0xffffff : sat.color;
+
+  return (
+    <group ref={groupRef}>
+      <group
+        onClick={(e) => {
+          e.stopPropagation();
+          selectFleetSat(selectedFleetSatId === sat.id ? null : sat.id);
+        }}
+        onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
+        onPointerOut={() => { setHovered(false); document.body.style.cursor = 'default'; }}
+      >
+        <mesh>
+          <boxGeometry args={[0.014, 0.014, 0.036]} />
+          <meshBasicMaterial color={bodyColor} />
+        </mesh>
+        <mesh position={[0.028, 0, 0]}>
+          <boxGeometry args={[0.036, 0.001, 0.018]} />
+          <meshBasicMaterial color={0x1a4488} />
+        </mesh>
+        <mesh position={[-0.028, 0, 0]}>
+          <boxGeometry args={[0.036, 0.001, 0.018]} />
+          <meshBasicMaterial color={0x1a4488} />
+        </mesh>
+        {highlighted && (
+          <mesh>
+            <sphereGeometry args={[0.05, 16, 16]} />
+            <meshBasicMaterial color={sat.color} transparent opacity={0.15} />
+          </mesh>
+        )}
+      </group>
+    </group>
+  );
+}
+
+function FleetConstellation() {
+  const selectedFleetSatId = usePrismStore((s) => s.selectedFleetSatId);
+
+  const rings = useMemo(() => {
+    return FLEET_SATELLITES.map((sat) => {
+      const rScene = altitudeKmToSceneRadius(sat.altitude_km);
+      const incRad = THREE.MathUtils.degToRad(sat.inclination_deg);
+      const raanRad = THREE.MathUtils.degToRad(sat.raan_deg);
+      const pts = orbitRingPointsThreeJs(rScene, incRad, raanRad, 96);
+      const hex = `#${sat.color.toString(16).padStart(6, '0')}`;
+      return { id: sat.id, pts, hex };
+    });
   }, []);
 
   return (
     <group>
-      {spec.rings.map((ring, i) => (
-        <Line key={`default-ring-${i}`} points={ring.pts} color={ring.color} lineWidth={0.5} transparent opacity={0.15} />
-      ))}
-      {spec.sats.map((s, i) => (
-        <WalkerSatelliteMesh
-          key={`default-sat-${i}`}
-          index={1000 + i}
-          rScene={s.rScene}
-          incRad={s.incRad}
-          raanRad={s.raanRad}
-          M0={s.M0}
-          meanMotion={s.mm}
-          color={s.color}
+      {rings.map((r) => (
+        <Line
+          key={`fleet-ring-${r.id}`}
+          points={r.pts}
+          color={r.id === selectedFleetSatId ? r.hex : r.hex}
+          lineWidth={r.id === selectedFleetSatId ? 1.0 : 0.5}
+          transparent
+          opacity={r.id === selectedFleetSatId ? 0.35 : 0.12}
         />
+      ))}
+      {FLEET_SATELLITES.map((sat) => (
+        <FleetSatelliteMesh key={sat.id} sat={sat} highlighted={sat.id === selectedFleetSatId} />
       ))}
     </group>
   );
+}
+
+function ManeuverTargetRing() {
+  const maneuverResult = usePrismStore((s) => s.maneuverResult);
+  if (!maneuverResult?.best_plan) return null;
+
+  const targetOrbit = maneuverResult.best_plan.target_orbit;
+  const rScene = altitudeKmToSceneRadius(targetOrbit.altitude_km);
+  const incRad = THREE.MathUtils.degToRad(targetOrbit.inclination_deg);
+  const raanRad = THREE.MathUtils.degToRad(targetOrbit.raan_deg);
+  const pts = orbitRingPointsThreeJs(rScene, incRad, raanRad, 96);
+
+  return <Line points={pts} color="#ffcc00" lineWidth={1.5} transparent opacity={0.45} dashed dashSize={0.02} gapSize={0.02} />;
 }
 
 export default function OrbitalSystem() {
@@ -215,7 +286,9 @@ export default function OrbitalSystem() {
 
   return (
     <group>
-      {hasSolverGeometry ? <ConstellationFromScan /> : <DefaultConstellation />}
+      <FleetConstellation />
+      {hasSolverGeometry && <ConstellationFromScan />}
+      <ManeuverTargetRing />
     </group>
   );
 }

@@ -29,11 +29,11 @@ import math
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
-from satellite_models import (
+from .satellite_models import (
     OrbitalState, R_EARTH, MU_EARTH, DEG_TO_RAD, RAD_TO_DEG,
     EARTH_ROTATION_RAD_PER_SEC, orbital_period,
 )
-from target_region import TargetRegion, haversine_distance, sample_region_points
+from .target_region import TargetRegion, haversine_distance, sample_region_points
 
 
 # ──────────────────────────────────────────────

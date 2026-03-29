@@ -6,6 +6,7 @@ import type {
   OrbitDesignRequestBody,
   ScanSession,
 } from '@/lib/orbitTypes';
+import type { ManeuverRequestBody, ManeuverApiResponse, ManeuverResultData } from '@/lib/maneuverTypes';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const GENERATE_TIMEOUT_MS = 120_000;
@@ -95,15 +96,38 @@ export const api = {
     return { request: data, design };
   },
 
-  async repositionSatellite(data: unknown) {
-    const response = await fetch(`${API_BASE_URL}/api/v1/design/reposition`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    const json = await parseJson(response);
-    if (!response.ok) throw new Error('Reposition failed');
-    return json;
+  async optimizeManeuver(data: ManeuverRequestBody): Promise<ManeuverResultData> {
+    const response = await fetchWithTimeout(
+      `${API_BASE_URL}/api/v1/maneuver/optimize`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      },
+      GENERATE_TIMEOUT_MS,
+    );
+    const json = (await parseJson(response)) as ManeuverApiResponse;
+
+    if (!response.ok) {
+      const detail = (json as { detail?: unknown }).detail;
+      const msg =
+        typeof detail === 'string'
+          ? detail
+          : Array.isArray(detail)
+            ? detail.map((d) => (d as { msg?: string }).msg).filter(Boolean).join('; ')
+            : JSON.stringify(json);
+      throw new Error(msg || `Maneuver optimization failed (${response.status})`);
+    }
+
+    if (json.status === 'error') {
+      throw new Error(json.message || 'Maneuver engine error');
+    }
+
+    if (!json.data) {
+      throw new Error('Invalid API response: missing data');
+    }
+
+    return json.data;
   },
 
   async decryptToken(encrypted_token: string) {

@@ -75,6 +75,15 @@ interface EarthProps {
   onCountryClick: (e: any) => void;
 }
 
+function latLngToLocalPos(lat: number, lng: number, r: number = 1.01): THREE.Vector3 {
+  const latRad = lat * (Math.PI / 180);
+  const lngRad = lng * (Math.PI / 180);
+  const y = Math.sin(latRad);
+  const x = -Math.cos(latRad) * Math.sin(lngRad);
+  const z = -Math.cos(latRad) * Math.cos(lngRad);
+  return new THREE.Vector3(x, y, z).multiplyScalar(r);
+}
+
 function RegionHighlight({ country }: { country: any }) {
   const pingerRef = useRef<THREE.Mesh>(null);
   
@@ -88,16 +97,7 @@ function RegionHighlight({ country }: { country: any }) {
   });
 
   if (!country) return null;
-
-  // Conversion: Sphere Geometry to Lat/Long (Precise)
-  const latRad = country.lat * (Math.PI / 180);
-  const lngRad = country.lng * (Math.PI / 180);
-  
-  const y = Math.sin(latRad);
-  const x = -Math.cos(latRad) * Math.sin(lngRad);
-  const z = -Math.cos(latRad) * Math.cos(lngRad);
-  
-  const pos = new THREE.Vector3(x, y, z).multiplyScalar(1.01);
+  const pos = latLngToLocalPos(country.lat, country.lng);
 
   return (
     <group position={pos}>
@@ -110,6 +110,64 @@ function RegionHighlight({ country }: { country: any }) {
         <meshBasicMaterial color={0xffffff} />
       </mesh>
     </group>
+  );
+}
+
+function TargetCrosshair({ lat, lng, color }: { lat: number; lng: number; color: THREE.Color | number }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const ringRef = useRef<THREE.Mesh>(null);
+
+  const pos = useMemo(() => latLngToLocalPos(lat, lng, 1.005), [lat, lng]);
+  const normal = useMemo(() => pos.clone().normalize(), [pos]);
+
+  useFrame((state) => {
+    if (ringRef.current) {
+      const s = 1 + Math.sin(state.clock.elapsedTime * 3) * 0.2;
+      ringRef.current.scale.setScalar(s);
+    }
+  });
+
+  return (
+    <group position={pos} onUpdate={(self) => { self.lookAt(normal.clone().multiplyScalar(2).add(pos)); }}>
+      {/* Outer pulsing ring */}
+      <mesh ref={ringRef}>
+        <ringGeometry args={[0.024, 0.028, 32]} />
+        <meshBasicMaterial color={color} transparent opacity={0.7} side={THREE.DoubleSide} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+      {/* Inner dot */}
+      <mesh>
+        <circleGeometry args={[0.006, 16]} />
+        <meshBasicMaterial color={color} transparent opacity={0.9} side={THREE.DoubleSide} depthWrite={false} />
+      </mesh>
+      {/* Crosshair arms */}
+      {[0, Math.PI / 2, Math.PI, Math.PI * 1.5].map((angle, i) => {
+        const dx = Math.cos(angle);
+        const dy = Math.sin(angle);
+        return (
+          <mesh key={i} position={[dx * 0.029, dy * 0.029, 0]}>
+            <planeGeometry args={[0.018, 0.002]} />
+            <meshBasicMaterial color={color} transparent opacity={0.6} side={THREE.DoubleSide} depthWrite={false} rotation-z={angle} />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+}
+
+function SurfaceTargetMarkers() {
+  const surfaceTarget = usePrismStore((s) => s.surfaceTarget);
+  const maneuverTarget = usePrismStore((s) => s.maneuverTarget);
+  const selectedFleetSatId = usePrismStore((s) => s.selectedFleetSatId);
+
+  return (
+    <>
+      {maneuverTarget && selectedFleetSatId && (
+        <TargetCrosshair lat={maneuverTarget.lat} lng={maneuverTarget.lng} color={0xffcc00} />
+      )}
+      {surfaceTarget && !selectedFleetSatId && (
+        <TargetCrosshair lat={surfaceTarget.lat} lng={surfaceTarget.lng} color={0x00f5ff} />
+      )}
+    </>
   );
 }
 
@@ -200,6 +258,7 @@ export default function Earth({ onCountryClick }: EarthProps) {
       >
         <primitive object={earthMaterial} attach="material" />
         <RegionHighlight country={selectedCountry} />
+        <SurfaceTargetMarkers />
       </Sphere>
     </group>
   );
